@@ -114,7 +114,7 @@ class BaseTabularModel:
             self._metadata = table_metadata
             self._metadata_fitted = table_metadata.fitted
 
-    def fit(self, data):
+    def fit(self, data, orig_data):
         """Fit this model to the data.
 
         If the table metadata has not been given, learn it from the data.
@@ -140,7 +140,7 @@ class BaseTabularModel:
         if self._metadata.get_dtypes(ids=False):
             LOGGER.debug(
                 'Fitting %s model to table %s', self.__class__.__name__, self._metadata.name)
-            self._fit(transformed)
+            self._fit(transformed, orig_data)
 
     def get_metadata(self):
         """Get metadata about the table.
@@ -299,24 +299,24 @@ class BaseTabularModel:
         sampled, num_valid = self._sample_rows(
             num_rows, conditions, transformed_conditions, float_rtol)
 
-        counter = 0
-        total_sampled = num_rows
-        while num_valid < num_rows:
-            if counter >= max_retries:
-                break
+        # counter = 0
+        # total_sampled = num_rows
+        # while num_valid < num_rows:
+        #     if counter >= max_retries:
+        #         break
 
-            remaining = num_rows - num_valid
-            valid_probability = (num_valid + 1) / (total_sampled + 1)
-            max_rows = num_rows * max_rows_multiplier
-            num_to_sample = min(int(remaining / valid_probability), max_rows)
-            total_sampled += num_to_sample
+        #     remaining = num_rows - num_valid
+        #     valid_probability = (num_valid + 1) / (total_sampled + 1)
+        #     max_rows = num_rows * max_rows_multiplier
+        #     num_to_sample = min(int(remaining / valid_probability), max_rows)
+        #     total_sampled += num_to_sample
 
-            LOGGER.info('%s valid rows remaining. Resampling %s rows', remaining, num_to_sample)
-            sampled, num_valid = self._sample_rows(
-                num_to_sample, conditions, transformed_conditions, float_rtol, sampled
-            )
+        #     LOGGER.info('%s valid rows remaining. Resampling %s rows', remaining, num_to_sample)
+        #     sampled, num_valid = self._sample_rows(
+        #         num_to_sample, conditions, transformed_conditions, float_rtol, sampled
+        #     )
 
-            counter += 1
+        #     counter += 1
 
         return sampled.head(min(len(sampled), num_rows))
 

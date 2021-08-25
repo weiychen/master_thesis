@@ -1,7 +1,8 @@
 """Wrapper around CTGAN model."""
 
 import numpy as np
-from ctgan import CTGANSynthesizer, TVAESynthesizer
+from ctgan import TVAESynthesizer
+from DPCTGAN import DPCTGAN
 
 from sdv.tabular.base import BaseTabularModel
 
@@ -22,7 +23,7 @@ class CTGANModel(BaseTabularModel):
     def _build_model(self):
         return self._MODEL_CLASS(**self._model_kwargs)
 
-    def _fit(self, table_data):
+    def _fit(self, table_data, orig_data):
         """Fit the model to the table.
 
         Args:
@@ -56,6 +57,7 @@ class CTGANModel(BaseTabularModel):
 
         self._model.fit(
             table_data,
+            orig_data,
             discrete_columns=categoricals
         )
 
@@ -81,7 +83,8 @@ class CTGANModel(BaseTabularModel):
 
 
 class CTGAN(CTGANModel):
-    """Model wrapping ``CTGANSynthesizer`` model.
+    """Model wrapping ``DPCTGAN`` model.
+
 
     Args:
         field_names (list[str]):
@@ -172,7 +175,7 @@ class CTGAN(CTGANModel):
             is given, there won't be a maximum. Defaults to ``'auto'``.
     """
 
-    _MODEL_CLASS = CTGANSynthesizer
+    _MODEL_CLASS = DPCTGAN
 
     def __init__(self, field_names=None, field_types=None, field_transformers=None,
                  anonymize_fields=None, primary_key=None, constraints=None, table_metadata=None,
