@@ -2,3 +2,5 @@
 -e .[dev]
 
 pm4py
+tensorflow
+opacus
