@@ -138,13 +138,13 @@ class MyDataSampler(DataSampler):
         model.train()
         batch_size = 10#50
         sequence_length = 10#50
-        max_epochs = 3
+        max_epochs = 50
 
         # Privacy engine hyper-parameters
         max_per_sample_grad_norm = 1.0
         # delta = 0#8e-5
         epsilon = 2.0
-        epochs = 2#50
+        epochs = 3#50
         secure_rng = False
         sample_rate = batch_size / len(data)
 
@@ -186,7 +186,7 @@ class MyDataSampler(DataSampler):
         max_constraint = max(groups['time:timestamp'])
 
         text = 'start'
-        next_words = len(data)*20
+        next_words = len(data)*10
         model.eval()
 
         words = text.split(' ')
@@ -518,21 +518,21 @@ class DPCTGAN(CTGANSynthesizer):
             discriminator.parameters(), lr=self._discriminator_lr,
             betas=(0.5, 0.9), weight_decay=self._discriminator_decay
         )
-        privacy_engine = opacus.PrivacyEngine( 
-            discriminator,
-            batch_size=self._batch_size,
-            sample_rate = self._batch_size / len(self.data),
-            # sample_size=train_data.shape[0],
-            # alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
-            # noise_multiplier=self.sigma,
-            max_grad_norm=self.max_per_sample_grad_norm,
-            target_epsilon=self.epsilon,
-            epochs = epochs
-            # clip_per_layer=True,
-        )
+        # privacy_engine = opacus.PrivacyEngine( 
+        #     discriminator,
+        #     batch_size=self._batch_size,
+        #     sample_rate = self._batch_size / len(self.data),
+        #     # sample_size=train_data.shape[0],
+        #     # alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
+        #     # noise_multiplier=self.sigma,
+        #     max_grad_norm=self.max_per_sample_grad_norm,
+        #     target_epsilon=self.epsilon,
+        #     epochs = epochs
+        #     # clip_per_layer=True,
+        # )
 
-        if not self.disabled_dp:
-            privacy_engine.attach(optimizerD)
+        # if not self.disabled_dp:
+        #     privacy_engine.attach(optimizerD)
 
         # real_label = 1
         # fake_label = 0
@@ -583,7 +583,7 @@ class DPCTGAN(CTGANSynthesizer):
                     loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
 
                     optimizerD.zero_grad()
-     
+                    pen.backward(retain_graph=True)
                     loss_d.backward()
                     optimizerD.step()
                     # """change location"""
