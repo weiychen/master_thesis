@@ -46,13 +46,17 @@ def main():
     # })
     discrete_columns = ['concept:name']
     pos_constraint = Positive(columns='duration',strict=False, handling_strategy='reject_sampling')
-    ctgan = CTGAN(epochs=3,batch_size=20,constraints=[pos_constraint])
+    ctgan = CTGAN(epochs=1,batch_size=20,constraints=[pos_constraint])
     # ctgan = DPCTGAN(epochs=50, batch_size=10)#epochs=50, batch_size=10
     # ctgan.fit(data, discrete_columns)
     
     ctgan.fit(data, dataframe[['concept:name','duration','case:concept:name','time:timestamp']])
-    sampled = ctgan.sample(len(data))#, discrete_columns[0], "A")#, discrete_columns[0], "b"
+    sampled= ctgan.sample(len(data))#, discrete_columns[0], "A")#, discrete_columns[0], "b"
+    if activities['concept:name'] == sampled['concept:name']:
+           print( "inner join by key with concept:name")
 
+    else:
+        print('not equal--> make sampled conc')
     print(data)
     print(sampled)
 
