@@ -52,7 +52,7 @@ def get_fitted_model():
     else:
         print("Retraining model...")
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
-        ctgan = CTGAN(epochs=1, batch_size=20, constraints=[pos_constraint])
+        ctgan = CTGAN(epochs=100, batch_size=20, constraints=[pos_constraint])
         ctgan.fit(data, dataframe[['concept:name','duration','case:concept:name','time:timestamp']])
         save_model(ctgan, MODEL_FILE, override=True)
     return ctgan

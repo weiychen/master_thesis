@@ -138,13 +138,13 @@ class MyDataSampler(DataSampler):
         model.train()
         batch_size = 10#50
         sequence_length = 10#50
-        max_epochs = 3
+        max_epochs = 100
 
         # Privacy engine hyper-parameters
         max_per_sample_grad_norm = 1.0
         # delta = 0#8e-5
         epsilon = 2.0
-        epochs = 3#50
+        epochs = 100#50
         secure_rng = False
         sample_rate = batch_size / len(data)
 
