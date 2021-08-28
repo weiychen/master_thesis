@@ -63,7 +63,7 @@ def main():
     ctgan = get_fitted_model()
 
     print("\nSampling model.\n")
-    sampled = ctgan.sample(len(data))
+    sampled, activities = ctgan.sample(len(data))
 
     # TODO:
     if activities['concept:name'] == sampled['concept:name']:

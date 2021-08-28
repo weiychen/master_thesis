@@ -542,5 +542,5 @@ class DPCTGAN(CTGANSynthesizer):
         data = data[:n]
         transformed = self._transformer.inverse_transform(data)
         
-        return transformed#, activities
+        return transformed, activities
 

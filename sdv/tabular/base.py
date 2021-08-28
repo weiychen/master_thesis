@@ -225,7 +225,7 @@ class BaseTabularModel:
         """
         if self._metadata.get_dtypes(ids=False):
             if conditions is None:
-                sampled = self._sample(num_rows)
+                sampled, activities = self._sample(num_rows)
             else:
                 try:
                     sampled = self._sample(num_rows, transformed_conditions)
@@ -244,7 +244,7 @@ class BaseTabularModel:
 
             num_valid = len(sampled)
 
-            return sampled, num_valid
+            return sampled, num_valid, activities
 
         else:
             sampled = pd.DataFrame(index=range(num_rows))
@@ -296,7 +296,7 @@ class BaseTabularModel:
             pandas.DataFrame:
                 Sampled data.
         """
-        sampled, num_valid = self._sample_rows(
+        sampled, num_valid, activities = self._sample_rows(
             num_rows, conditions, transformed_conditions, float_rtol)
 
         # counter = 0
@@ -318,7 +318,7 @@ class BaseTabularModel:
 
         #     counter += 1
 
-        return sampled.head(min(len(sampled), num_rows))
+        return sampled.head(min(len(sampled), num_rows)), activities
 
     def _make_conditions_df(self, conditions, num_rows):
         """Transform `conditions` into a dataframe.
