@@ -57,17 +57,36 @@ def get_fitted_model():
         save_model(ctgan, MODEL_FILE, override=True)
     return ctgan
 
-def main():
 
+def is_concept_names_equal(df1, df2, ignore_length=True) -> bool:
+    len1 = len(df1['concept:name'])
+    len2 = len(df2['concept:name'])
+
+    if len1 != len2 and not ignore_length:
+        return False
+
+    # print names for debugging
+    for i in range(min(len1, len2)):
+        try:
+            print("{:<2} ?= {:<2}".format(df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']))
+        except IndexError:
+            # End of one array reached
+            break
+    print("Lengths (df1-df2): {}-{}".format(len1, len2))
+    return len(df1[df1['concept:name'] != df2['concept:name'].values]) == 0
+
+
+def main():
+    
     discrete_columns = ['concept:name']
     ctgan = get_fitted_model()
 
     print("\nSampling model.\n")
     sampled, activities = ctgan.sample(len(data))
 
-    # TODO:
-    if activities['concept:name'] == sampled['concept:name']:
-           print( "inner join by key with concept:name")
+    # TODO: Make sure they have the same activities
+    if is_concept_names_equal(activities, sampled):
+        print("inner join by key with concept:name")
     else:
         print('not equal--> make sampled conc')
 
