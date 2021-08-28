@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 from pm4py.objects.conversion.log import converter as log_converter
@@ -35,6 +37,27 @@ data = dataframe[['concept:name','duration']]
 data = data.fillna(0) ## maybe before training
 # batch_size=50
 
+MODEL_FILE = "ctgan_trained_model.mdl"
+RETRAIN = True
+
+def save_model(model, path, override=False):
+    if not os.path.exists(path) or override:
+        model.save(path)
+
+def get_fitted_model():
+    """ Load an already fitted model from file or fit a new one. """
+    if os.path.exists(MODEL_FILE) and not RETRAIN:
+        print("Loading trained model from '{}'".format(MODEL_FILE))
+        ctgan = CTGAN.load(MODEL_FILE)
+    else:
+        print("Retraining model...")
+        pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
+        ctgan = CTGAN(epochs=1, batch_size=20, constraints=[pos_constraint])
+        ctgan.fit(data, dataframe[['concept:name','duration','case:concept:name','time:timestamp']])
+        # ctgan = DPCTGAN(epochs=50, batch_size=10)#epochs=50, batch_size=10
+        # ctgan.fit(data, discrete_columns)
+        save_model(ctgan, MODEL_FILE, override=True)
+    return ctgan
 
 def main():
 
@@ -45,18 +68,17 @@ def main():
     #     #'discrete2': np.random.choice(['e', 'f', 'g'], 100)
     # })
     discrete_columns = ['concept:name']
-    pos_constraint = Positive(columns='duration',strict=False, handling_strategy='reject_sampling')
-    ctgan = CTGAN(epochs=1,batch_size=20,constraints=[pos_constraint])
-    # ctgan = DPCTGAN(epochs=50, batch_size=10)#epochs=50, batch_size=10
-    # ctgan.fit(data, discrete_columns)
-    
-    ctgan.fit(data, dataframe[['concept:name','duration','case:concept:name','time:timestamp']])
-    sampled= ctgan.sample(len(data))#, discrete_columns[0], "A")#, discrete_columns[0], "b"
+    ctgan = get_fitted_model()
+
+    print("\nSampling model.\n")
+    sampled = ctgan.sample(len(data))#, discrete_columns[0], "A")#, discrete_columns[0], "b"
+
+    # TODO:
     if activities['concept:name'] == sampled['concept:name']:
            print( "inner join by key with concept:name")
-
     else:
         print('not equal--> make sampled conc')
+
     print(data)
     print(sampled)
 
