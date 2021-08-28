@@ -54,24 +54,16 @@ def get_fitted_model():
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
         ctgan = CTGAN(epochs=1, batch_size=20, constraints=[pos_constraint])
         ctgan.fit(data, dataframe[['concept:name','duration','case:concept:name','time:timestamp']])
-        # ctgan = DPCTGAN(epochs=50, batch_size=10)#epochs=50, batch_size=10
-        # ctgan.fit(data, discrete_columns)
         save_model(ctgan, MODEL_FILE, override=True)
     return ctgan
 
 def main():
 
-    # size = 10_000
-    # data = pd.DataFrame({
-    #     'continuous': np.random.random(size),
-    #     'discrete': np.random.choice(['a', 'b', 'c'], size),
-    #     #'discrete2': np.random.choice(['e', 'f', 'g'], 100)
-    # })
     discrete_columns = ['concept:name']
     ctgan = get_fitted_model()
 
     print("\nSampling model.\n")
-    sampled = ctgan.sample(len(data))#, discrete_columns[0], "A")#, discrete_columns[0], "b"
+    sampled = ctgan.sample(len(data))
 
     # TODO:
     if activities['concept:name'] == sampled['concept:name']:
