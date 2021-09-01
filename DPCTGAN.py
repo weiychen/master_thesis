@@ -385,46 +385,6 @@ class DPCTGAN(CTGANSynthesizer):
                     pen.backward(retain_graph=True)
                     loss_d.backward()
                     optimizerD.step()
-                    # """change location"""
-                    # optimizerD.zero_grad()
-                    # if self.loss == "cross_entropy":
-                    #     y_fake = discriminator(fake_cat)
-                    #     """added label_fake"""
-                    #     label_fake = torch.full(
-                    #     (int(self._batch_size / self.pac),),
-                    #     fake_label,
-                    #     dtype=torch.float,
-                    #     device=self.device,
-                    # )
-                    #     """add below"""
-                    #     y_fake = torch.abs(y_fake)
-                    #     y_fake[y_fake>1]=1
-                    #     error_d_fake = criterion(y_fake.flatten(), label_fake)
-                    #     error_d_fake.backward()
-                    #     optimizerD.step()
-                    #     # train with real
-                    #     label_true = torch.full(
-                    #         (int(self._batch_size / self.pac),),
-                    #         real_label,
-                    #         dtype=torch.float,
-                    #         device=self.device,
-                    #     )
-                    #     y_real = discriminator(real_cat)
-                    #     """change<0 --> 0"""
-                    #     y_real[y_real>1]=1
-                    #     y_real[y_real<0]=0
-                    #     error_d_real = criterion(y_real.flatten(), label_true)
-                    #     error_d_real.backward()
-                    #     optimizerD.step()
-
-                    #     loss_d = error_d_real + error_d_fake
-
-
-
-                    
-                    # pen.backward(retain_graph=True)
-                    # loss_d.backward()
-                    # optimizerD.step()
 
                 fakez = torch.normal(mean=mean, std=std)
                 condvec = self._data_sampler.sample_condvec(self._batch_size)
@@ -454,31 +414,6 @@ class DPCTGAN(CTGANSynthesizer):
                 optimizerG.zero_grad()
                 loss_g.backward()
                 optimizerG.step()
-
-                # if self.loss == "cross_entropy":
-                #     label_g = torch.full(
-                #         (int(self._batch_size / self.pac),),
-                #         real_label,
-                #         dtype=torch.float,
-                #         device=self.device,
-                #     )
-                #     # label_g = torch.full(int(self.batch_size/self.pac,),1,device=self.device)
-                #     y_fake[y_fake<0]=0
-                #     y_fake[y_fake>1]=1
-                #     loss_g = criterion(y_fake.flatten(), label_g)
-                #     loss_g = loss_g + cross_entropy
-                # else:
-                #     loss_g = -torch.mean(y_fake) + cross_entropy
-
-                # optimizerG.zero_grad()
-                # loss_g.backward()
-                # optimizerG.step()
-
-                # loss_g = -torch.mean(y_fake) + cross_entropy
-
-                # optimizerG.zero_grad()
-                # loss_g.backward()
-                # optimizerG.step()
 
             if self._verbose:
                 print(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
