@@ -450,7 +450,8 @@ class DPCTGAN(CTGANSynthesizer):
                  self._batch_size, self.data, self.org_data, self._epochs)
         activities_copy = activities.copy()
 
-        MAX_TRIES = 1000
+        MAX_TRIES = 200
+        failed = False
         
         steps = n // self._batch_size + 1
         data = []
@@ -492,11 +493,17 @@ class DPCTGAN(CTGANSynthesizer):
                     break
                     
                 if j == MAX_TRIES-1:
-                    print("Couldn't find matching activities vector... Activities:")
-                    print(next_activities)
+                    print(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries... ")
+                    print("Decrease the batch size or increase number of epochs and try again.")
+                    failed = True
+            if failed:
+                break
 
-        data = np.concatenate(data, axis=0)
-        transformed = pd.DataFrame(data[:n], columns=["concept:name", "duration"])
+        if not failed:
+            data = np.concatenate(data, axis=0)
+            transformed = pd.DataFrame(data[:n], columns=["concept:name", "duration"])
+        else:
+            transformed = pd.DataFrame([], columns=["concept:name", "duration"])
         
         return transformed, activities
 
