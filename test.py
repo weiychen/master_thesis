@@ -40,24 +40,31 @@ data = data.fillna(0) ## maybe before training
 # Create folder for saved pre-fitted models
 MODEL_FOLDER = "fitted_models"
 os.makedirs(MODEL_FOLDER, exist_ok=True) # create folder if not exists
-MODEL_FILE_PATTERN = os.path.join(MODEL_FOLDER, "ctgan_trained_model_{}epochs.mdl")
-RETRAIN = False
+MODEL_FILE_PATTERN = os.path.join(MODEL_FOLDER, "mdl_{}-epochs_dp-{}.mdl")
+RETRAIN = True
+
+EPOCHS = 50
+DISABLED_DP = False
 
 def save_model(model, path, override=False):
     if not os.path.exists(path) or override:
         model.save(path)
 
-def get_fitted_model(epochs=100):
+def get_fitted_model():
     """ Load an already fitted model from file or fit a new one. """
-    model_file = MODEL_FILE_PATTERN.format(epochs)
+    model_file = MODEL_FILE_PATTERN.format(EPOCHS, not DISABLED_DP)
     if os.path.exists(model_file) and not RETRAIN:
         print("Loading trained model from '{}'".format(model_file))
         ctgan = CTGAN.load(model_file)
     else:
         print("Retraining model...")
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
-        ctgan = CTGAN(epochs=epochs, batch_size=20, constraints=[pos_constraint])
-        ctgan.fit(data, dataframe[['concept:name','duration','case:concept:name','time:timestamp']])
+        ctgan = CTGAN(epochs=EPOCHS, batch_size=20, constraints=[pos_constraint])
+        ctgan.fit(
+            data, 
+            dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
+            disabled_dp=DISABLED_DP
+        )
         save_model(ctgan, model_file, override=True)
     return ctgan
 
@@ -72,7 +79,8 @@ def is_concept_names_equal(df1, df2, ignore_length=True) -> bool:
     # print names for debugging
     for i in range(min(len1, len2)):
         try:
-            print("{:<2} ?= {:<2}".format(df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']))
+            if df1.iloc[i]['concept:name'] != df2.iloc[i]['concept:name']:
+                print("Activity not the same (i={}): {:<2} != {:<2}".format(i, df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']))
         except IndexError:
             # End of one array reached
             break

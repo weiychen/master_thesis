@@ -23,7 +23,7 @@ class CTGANModel(BaseTabularModel):
     def _build_model(self):
         return self._MODEL_CLASS(**self._model_kwargs)
 
-    def _fit(self, table_data, orig_data):
+    def _fit(self, table_data, orig_data, disabled_dp):
         """Fit the model to the table.
 
         Args:
@@ -58,7 +58,8 @@ class CTGANModel(BaseTabularModel):
         self._model.fit(
             table_data,
             orig_data,
-            discrete_columns=categoricals
+            discrete_columns=categoricals,
+            disabled_dp=disabled_dp
         )
 
     def _sample(self, num_rows, conditions=None):

@@ -131,20 +131,19 @@ duplicate reading
 
 class MyDataSampler(DataSampler):
 
-    
-    def generate_cond_from_condition_column_info(self, batch, data, org_data):
+    def generate_cond_from_condition_column_info(self, batch, data, org_data, epochs):
+        """ Generate fake activities. """
         dataset = Dataset()
         model = Model(dataset)
         model.train()
         batch_size = 10#50
         sequence_length = 10#50
-        max_epochs = 100
+        max_epochs = epochs
 
         # Privacy engine hyper-parameters
         max_per_sample_grad_norm = 1.0
         # delta = 0#8e-5
         epsilon = 2.0
-        epochs = 100#50
         secure_rng = False
         sample_rate = batch_size / len(data)
 
@@ -240,7 +239,7 @@ class MyDataSampler(DataSampler):
 
 class DPCTGAN(CTGANSynthesizer):
 
-    def fit(self, train_data, org_data, discrete_columns=tuple(), epochs=None):
+    def fit(self, train_data, org_data, discrete_columns=tuple(), epochs=None, disabled_dp=False):
         """
         Fit the CTGAN Synthesizer models to the training data.
 
@@ -256,7 +255,7 @@ class DPCTGAN(CTGANSynthesizer):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # opacus parameters
         self.sigma = 5#sigma
-        self.disabled_dp = False #disabled_dp
+        self.disabled_dp = disabled_dp
         self.target_delta = None#target_delta
         self.max_per_sample_grad_norm = 1#max_per_sample_grad_norm
         self.epsilon = 2 #epsilon
@@ -445,7 +444,7 @@ class DPCTGAN(CTGANSynthesizer):
         # else:
         #     global_condition_vec = None
         global_condition_vec, activities = self._data_sampler.generate_cond_from_condition_column_info(
-                 self._batch_size, self.data, self.org_data)
+                 self._batch_size, self.data, self.org_data, self._epochs)
         
         steps = n // self._batch_size #+ 1
         data = []
