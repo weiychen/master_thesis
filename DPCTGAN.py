@@ -445,36 +445,58 @@ class DPCTGAN(CTGANSynthesizer):
         #     global_condition_vec = None
         global_condition_vec, activities = self._data_sampler.generate_cond_from_condition_column_info(
                  self._batch_size, self.data, self.org_data, self._epochs)
+        activities_copy = activities.copy()
+
+        MAX_TRIES = 1000
         
-        steps = n // self._batch_size #+ 1
+        steps = n // self._batch_size + 1
         data = []
         for i in range(steps):
-            mean = torch.zeros(self._batch_size, self._embedding_dim)
-            std = mean + 1
-            fakez = torch.normal(mean=mean, std=std).to(self._device)
-            
-            if global_condition_vec is not None:
-                condvec = global_condition_vec[:self._batch_size]
 
-                global_condition_vec = global_condition_vec[self._batch_size:]
-            # else:
-            #     condvec = self._data_sampler.sample_original_condvec(self._batch_size)
+            next_activities = activities_copy[:self._batch_size]
+            activities_copy = activities_copy[self._batch_size:]
 
-            if len(condvec) != self._batch_size :#is None:
-                break
-                #pass
-            else:
-                c1 = condvec
-                c1 = torch.from_numpy(c1).to(self._device)
-                fakez = torch.cat([fakez, c1], dim=1)
+            # Iterate until the generated activities match next_activities
+            for j in range(MAX_TRIES):
 
-            fake = self._generator(fakez)
-            fakeact = self._apply_activate(fake)
-            data.append(fakeact.detach().cpu().numpy())
+                mean = torch.zeros(self._batch_size, self._embedding_dim)
+                std = mean + 1
+                fakez = torch.normal(mean=mean, std=std).to(self._device)
+
+                if global_condition_vec is not None:
+                    condvec = global_condition_vec[:self._batch_size]
+                # else:
+                #     condvec = self._data_sampler.sample_original_condvec(self._batch_size)
+
+                if len(condvec) != self._batch_size :#is None:
+                    break
+                else:
+                    c1 = condvec # A, B2, C, D, E -> One Hot Encoding
+                    c1 = torch.from_numpy(c1).to(self._device)
+                    fakez = torch.cat([fakez, c1], dim=1)
+
+                fake = self._generator(fakez)
+                fakeact = self._apply_activate(fake)
+                
+                generated = self._transformer.inverse_transform(fakeact.detach().cpu().numpy())
+                activities_match = generated['concept:name'].values == next_activities['concept:name'].values
+                activities_match = activities_match if isinstance(activities_match, bool) else activities_match.all()
+                if activities_match:
+                    # The generated activities match. Continue with next step
+                    data.append(generated)
+
+                    # Remove used entries of global_condition_vec for next iteration step
+                    global_condition_vec = global_condition_vec[self._batch_size:]
+
+                    print(f"Found activites match after {j+1} tries.")
+                    break
+                    
+                if j == MAX_TRIES-1:
+                    print("Couldn't find matching activities vector... Activities:")
+                    print(next_activities)
 
         data = np.concatenate(data, axis=0)
-        data = data[:n]
-        transformed = self._transformer.inverse_transform(data)
+        transformed = pd.DataFrame(data[:n], columns=["concept:name", "duration"])
         
         return transformed, activities
 
