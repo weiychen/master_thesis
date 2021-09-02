@@ -41,10 +41,10 @@ data = data.fillna(0) ## maybe before training
 MODEL_FOLDER = "fitted_models"
 os.makedirs(MODEL_FOLDER, exist_ok=True) # create folder if not exists
 MODEL_FILE_PATTERN = os.path.join(MODEL_FOLDER, "mdl_{}-epochs_dp-{}.mdl")
-RETRAIN = True
+RETRAIN = False
 
-EPOCHS = 50
-DISABLED_DP = False
+EPOCHS = 100
+DISABLED_DP = True
 
 def save_model(model, path, override=False):
     if not os.path.exists(path) or override:

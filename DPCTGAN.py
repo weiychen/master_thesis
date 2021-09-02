@@ -132,7 +132,8 @@ duplicate reading
 class MyDataSampler(DataSampler):
 
     def generate_cond_from_condition_column_info(self, batch, data, org_data, epochs):
-        """ Generate fake activities. """
+        """ Generate fake activities sequence (inlcuding trace). 
+        E.g. A, B, D1,... """
         dataset = Dataset()
         model = Model(dataset)
         model.train()
