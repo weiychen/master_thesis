@@ -115,3 +115,5 @@ tutorials/**/*.pkl
 tutorials/**/*metadata.json
 notebooks
 tests/readme_test
+
+*.mdl
