@@ -24,7 +24,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from opacus import PrivacyEngine
 import opacus
-from tqdm import trange
+from tqdm import trange, tqdm
 torch.manual_seed(1)
 
 
@@ -191,7 +191,7 @@ class MyDataSampler(DataSampler):
         words = text.split(' ')
         state_h, state_c = model.init_state(len(words))
 
-        for i in range(0, next_words):
+        for i in trange(0, next_words):
             x = torch.tensor([[dataset.word_to_index[w] for w in words[i:]]])
             y_pred, (state_h, state_c) = model(x, (state_h, state_c))
             last_word_logits = y_pred[0][-1]
@@ -201,7 +201,7 @@ class MyDataSampler(DataSampler):
         ids = list()
         _words = list()
         list_index = 0
-        for word in words:
+        for word in tqdm(words):
             if word == "start":
                 new_ids = list()
                 new_words = list()
@@ -451,7 +451,7 @@ class DPCTGAN(CTGANSynthesizer):
         
         steps = n // self._batch_size + 1
         data = []
-        for i in range(steps):
+        for i in trange(steps):
 
             next_activities = activities_copy[:self._batch_size]
             activities_copy = activities_copy[self._batch_size:]
