@@ -97,9 +97,10 @@ def main():
 
     # TODO: Make sure they have the same activities
     if is_concept_names_equal(activities, sampled):
-        print("inner join by key with concept:name")
+        print("equal --> inner join by key with concept:name")
+        sampled['traces'] = activities['traces'].values
     else:
-        print('not equal--> make sampled conc')
+        print('not equal --> make sampled conc')
 
     print(data)
     print(sampled)
