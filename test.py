@@ -69,23 +69,22 @@ def get_fitted_model():
     return ctgan
 
 
-def is_concept_names_equal(df1, df2, ignore_length=True) -> bool:
+def is_concept_names_equal(df1, df2) -> bool:
     len1 = len(df1['concept:name'])
     len2 = len(df2['concept:name'])
 
-    if len1 != len2 and not ignore_length:
-        return False
-
     # print names for debugging
+    same = len1 == len2
     for i in range(min(len1, len2)):
         try:
             if df1.iloc[i]['concept:name'] != df2.iloc[i]['concept:name']:
                 print("Activity not the same (i={}): {:<2} != {:<2}".format(i, df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']))
+                same = False
         except IndexError:
             # End of one array reached
             break
     print("Lengths (df1-df2): {}-{}".format(len1, len2))
-    return len(df1[df1['concept:name'] != df2['concept:name'].values]) == 0
+    return same
 
 
 def main():
