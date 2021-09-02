@@ -465,19 +465,16 @@ class DPCTGAN(CTGANSynthesizer):
 
                 if global_condition_vec is not None:
                     condvec = global_condition_vec[:self._batch_size]
-                # else:
-                #     condvec = self._data_sampler.sample_original_condvec(self._batch_size)
+                    if len(condvec) != self._batch_size:
+                        fakez = fakez[:len(condvec)]
 
-                if len(condvec) != self._batch_size :#is None:
-                    break
-                else:
-                    c1 = condvec # A, B2, C, D, E -> One Hot Encoding
-                    c1 = torch.from_numpy(c1).to(self._device)
-                    fakez = torch.cat([fakez, c1], dim=1)
+                c1 = condvec # One-Hot Encoding Vector
+                c1 = torch.from_numpy(c1).to(self._device)
+                fakez = torch.cat([fakez, c1], dim=1)
 
                 fake = self._generator(fakez)
                 fakeact = self._apply_activate(fake)
-                
+
                 generated = self._transformer.inverse_transform(fakeact.detach().cpu().numpy())
                 activities_match = generated['concept:name'].values == next_activities['concept:name'].values
                 activities_match = activities_match if isinstance(activities_match, bool) else activities_match.all()
