@@ -43,12 +43,21 @@ os.makedirs(MODEL_FOLDER, exist_ok=True) # create folder if not exists
 MODEL_FILE_PATTERN = os.path.join(MODEL_FOLDER, "mdl_{}-epochs_dp-{}.mdl")
 RETRAIN = False
 
-EPOCHS = 100
+# Create folder for saved sampled data (result) for later evaluation
+RESULTS_FOLDER = "results"
+os.makedirs(RESULTS_FOLDER, exist_ok=True)
+RESULTS_FILE_PATTERN = os.path.join(RESULTS_FOLDER, "sampled_{}-epochs_dp-{}.csv")
+OVERRIDE_EXISTING_CSV = True
+
+# Settings for training and sampling
+EPOCHS = 10
 DISABLED_DP = True
 
-def save_model(model, path, override=False):
+
+def save_model(model: CTGAN, path: str, override=False):
     if not os.path.exists(path) or override:
         model.save(path)
+
 
 def get_fitted_model():
     """ Load an already fitted model from file or fit a new one. """
@@ -69,7 +78,7 @@ def get_fitted_model():
     return ctgan
 
 
-def is_concept_names_equal(df1, df2) -> bool:
+def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
     len1 = len(df1['concept:name'])
     len2 = len(df2['concept:name'])
 
@@ -87,6 +96,13 @@ def is_concept_names_equal(df1, df2) -> bool:
     return same
 
 
+def save_results(results_df: pd.DataFrame):
+    csv_file = RESULTS_FILE_PATTERN.format(EPOCHS, not DISABLED_DP)
+    if not os.path.exists(csv_file) or OVERRIDE_EXISTING_CSV:
+        # Save only if file doesn't already exist or override flag set
+        results_df.to_csv(csv_file)
+    
+
 def main():
     
     discrete_columns = ['concept:name']
@@ -101,6 +117,8 @@ def main():
         sampled['traces'] = activities['traces'].values
     else:
         print('not equal --> make sampled conc')
+
+    save_results(sampled)
 
     print(data)
     print(sampled)
