@@ -35,7 +35,7 @@ dataframe['duration'] =duration.droplevel(0).reset_index(drop = True)
 dataframe = dataframe.reset_index(drop = True)
 data = dataframe[['concept:name','duration']]
 data = data.fillna(0) ## maybe before training
-# batch_size=50
+
 
 # Create folder for saved pre-fitted models
 MODEL_FOLDER = "fitted_models"
@@ -50,6 +50,7 @@ RESULTS_FILE_PATTERN = os.path.join(RESULTS_FOLDER, "sampled_{}-epochs_dp-{}.csv
 OVERRIDE_EXISTING_CSV = True
 
 # Settings for training and sampling
+BATCH_SIZE = 10
 EPOCHS = 10
 DISABLED_DP = True
 
@@ -68,7 +69,7 @@ def get_fitted_model():
     else:
         print("Retraining model...")
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
-        ctgan = CTGAN(epochs=EPOCHS, batch_size=20, constraints=[pos_constraint])
+        ctgan = CTGAN(epochs=EPOCHS, batch_size=BATCH_SIZE, constraints=[pos_constraint])
         ctgan.fit(
             data, 
             dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
@@ -118,6 +119,7 @@ def main():
     else:
         print('not equal --> make sampled conc')
 
+    # Save the sampled data result to the file specified in the settings
     save_results(sampled)
 
     print(data)
