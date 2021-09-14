@@ -47,7 +47,7 @@ OVERRIDE_EXISTING_CSV = True
 # Settings for training and sampling
 BATCH_SIZE = 10
 EPOCHS = 10
-DISABLED_DP = True
+ENABLED_DP = True
 
 
 def save_model(model: CTGAN, path: str, override=False):
@@ -58,7 +58,7 @@ def save_model(model: CTGAN, path: str, override=False):
 def get_fitted_model():
     """ Load an already fitted model from file or fit a new one. """
     dataset_name = os.path.basename(dataset).split(".")[0]
-    model_file = MODEL_FILE_PATTERN.format(dataset_name, EPOCHS, not DISABLED_DP)
+    model_file = MODEL_FILE_PATTERN.format(dataset_name, EPOCHS, ENABLED_DP)
     if os.path.exists(model_file) and not RETRAIN:
         print("Loading trained model from '{}'".format(model_file))
         ctgan = CTGAN.load(model_file)
@@ -69,7 +69,7 @@ def get_fitted_model():
         ctgan.fit(
             data, 
             dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
-            disabled_dp=DISABLED_DP
+            disabled_dp=not ENABLED_DP
         )
         save_model(ctgan, model_file, override=True)
     return ctgan
@@ -95,7 +95,7 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
 
 def save_results(results_df: pd.DataFrame):
     dataset_name = os.path.basename(dataset).split(".")[0]
-    csv_file = RESULTS_FILE_PATTERN.format(dataset_name, EPOCHS, not DISABLED_DP)
+    csv_file = RESULTS_FILE_PATTERN.format(dataset_name, EPOCHS, ENABLED_DP)
     if not os.path.exists(csv_file) or OVERRIDE_EXISTING_CSV:
         # Save only if file doesn't already exist or override flag set
         results_df.to_csv(csv_file)
