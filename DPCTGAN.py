@@ -1,3 +1,5 @@
+import os
+
 from ctgan import CTGANSynthesizer
 from ctgan.data_sampler import DataSampler
 from ctgan.data_transformer import DataTransformer
@@ -141,53 +143,10 @@ class MyDataSampler(DataSampler):
     def generate_cond_from_condition_column_info(self, batch, data, org_data, epochs):
         """ Generate fake activities sequence (inlcuding trace). 
         E.g. A, B, D1,... """
-        dataset = Dataset()
-        model = Model(dataset)
-        model.train()
-        batch_size = 10#50
-        sequence_length = 10#50
-        max_epochs = epochs
+        self.dataset = Dataset()
+        self.epochs = epochs
 
-        # Privacy engine hyper-parameters
-        max_per_sample_grad_norm = 1.0
-        # delta = 0#8e-5
-        epsilon = 2.0
-        secure_rng = False
-        sample_rate = batch_size / len(data)
-
-        dataloader = DataLoader(dataset, batch_size=batch_size,drop_last = True)
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.008)
-
-
-        privacy_engine = PrivacyEngine(
-            model,
-            sample_rate=sample_rate,
-            max_grad_norm=max_per_sample_grad_norm,
-        #     target_delta=delta,
-            target_epsilon=epsilon,
-            epochs=epochs,
-        #     secure_rng=secure_rng,
-        )
-        privacy_engine.attach(optimizer)
-
-        rootLogger.info("Sampling activities")
-        for epoch in trange(max_epochs):
-            state_h, state_c = model.init_state(sequence_length)
-
-            for _batch, (x, y) in enumerate(dataloader):
-                optimizer.zero_grad()
-
-                y_pred, (state_h, state_c) = model(x, (state_h, state_c))
-                loss = criterion(y_pred.transpose(1, 2), y)
-
-                state_h = state_h.detach()
-                state_c = state_c.detach()
-
-                loss.backward()
-                optimizer.step()
-
-            rootLogger.info({ 'epoch': epoch, 'batch': batch, 'loss': loss.item() })
+        model = self.get_fitted_model(batch, data, org_data, epochs)
 
         groups = org_data.groupby(['case:concept:name']).count()
         min_constraint = min(groups['time:timestamp'])
@@ -202,12 +161,12 @@ class MyDataSampler(DataSampler):
 
         rootLogger.info("Generating words.")
         for i in trange(next_words):
-            x = torch.tensor([[dataset.word_to_index[w] for w in words[i:]]])
+            x = torch.tensor([[self.dataset.word_to_index[w] for w in words[i:]]])
             y_pred, (state_h, state_c) = model(x, (state_h, state_c))
             last_word_logits = y_pred[0][-1]
             p = torch.nn.functional.softmax(last_word_logits, dim=0).detach().numpy()
             word_index = np.random.choice(len(last_word_logits), p=p)
-            words.append(dataset.index_to_word[word_index])
+            words.append(self.dataset.index_to_word[word_index])
 
         rootLogger.info("Formatting words into dataframe.")
         ids = list()
@@ -247,6 +206,87 @@ class MyDataSampler(DataSampler):
         # vec = activities_pd[:batch].to_numpy()
         # data = data[batch:]
         return vec, cleaned_df 
+
+    def get_fitted_model(self, batch, data, org_data, epochs):
+        # Create folder for saved nn models
+        MODEL_FOLDER = "nn_models"
+        os.makedirs(MODEL_FOLDER, exist_ok=True) # create folder if not exists
+        MODEL_FILE_PATTERN = os.path.join(MODEL_FOLDER, "{}_{}-epochs.mdl")
+        RETRAIN = False
+        
+        """ Load an already fitted model from file or fit a new one. """
+        dataset_name = os.path.basename(self.dataset._dataset).split(".")[0]
+        model_file = MODEL_FILE_PATTERN.format(dataset_name, self.epochs)
+        if os.path.exists(model_file) and not RETRAIN:
+            rootLogger.info("Loading trained nn.Model from '{}'".format(model_file))
+            return self.load_model(model_file)
+        else:
+            rootLogger.info("Retraining model...")
+            model = self._fit_model(batch, data, org_data, epochs)
+            self.save_model(model, model_file, override=True)
+            return model
+
+    def _fit_model(self, batch, data, org_data, epochs):
+        model = Model(self.dataset)
+        model.train()
+        batch_size = 10#50
+        sequence_length = 10#50
+        max_epochs = epochs
+
+        # Privacy engine hyper-parameters
+        max_per_sample_grad_norm = 1.0
+        # delta = 0#8e-5
+        epsilon = 1.0
+        secure_rng = False
+        sample_rate = batch_size / len(data)
+
+        dataloader = DataLoader(self.dataset, batch_size=batch_size,drop_last = True)
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.008)
+
+
+        privacy_engine = PrivacyEngine(
+            model,
+            sample_rate=sample_rate,
+            max_grad_norm=max_per_sample_grad_norm,
+        #     target_delta=delta,
+            target_epsilon=epsilon,
+            epochs=epochs,
+        #     secure_rng=secure_rng,
+        )
+        privacy_engine.attach(optimizer)
+
+        rootLogger.info("Sampling activities")
+        epochs_info = list()
+        for epoch in trange(max_epochs):
+            state_h, state_c = model.init_state(sequence_length)
+
+            for _batch, (x, y) in enumerate(dataloader):
+                optimizer.zero_grad()
+
+                y_pred, (state_h, state_c) = model(x, (state_h, state_c))
+                loss = criterion(y_pred.transpose(1, 2), y)
+
+                state_h = state_h.detach()
+                state_c = state_c.detach()
+
+                loss.backward()
+                optimizer.step()
+
+            epochs_info.append({ 'epoch': epoch, 'batch': batch, 'loss': loss.item() })
+        
+        for info in epochs_info:
+            rootLogger.info(info)
+
+        return model
+        
+    def save_model(self, model: Model, path: str, override=False):
+        if not os.path.exists(path) or override:
+            torch.save(model, path)
+
+    def load_model(self, path: str):
+        if os.path.exists(path):
+            return torch.load(path)
 
 
 class DPCTGAN(CTGANSynthesizer):
