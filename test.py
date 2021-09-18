@@ -13,7 +13,7 @@ import config
 rootLogger = config.get_logger()
 
 # import datetime
-rootLogger.info(f"Load data from file '{config.dataset}'")
+rootLogger.info(f"Load data from file '{config.DATASET}'")
 
 dataframe = config.get_dataset_df()
 def infer_time(dataframe):
@@ -33,7 +33,7 @@ rootLogger.info("Finished data loading.")
 def get_fitted_model():
     """ Load an already fitted model from checkpoint or fit a new one. """
     cp = CTGANCheckpoint(
-        os.path.basename(config.dataset).split(".")[0], config.EPOCHS_CTGAN, config.ENABLED_DP)
+        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP)
 
     if cp.exists() and not config.RETRAIN_CTGAN:
         rootLogger.info("Loading trained model from '{}'".format(cp.save_file))
@@ -71,7 +71,7 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
 
 def save_results(results_df: pd.DataFrame):
     cp = DataframeCheckpoint(
-        os.path.basename(config.dataset).split(".")[0], config.EPOCHS_CTGAN, config.ENABLED_DP
+        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP
     )
     cp.save(results_df, override=config.OVERRIDE_EXISTING_RESULTS)
 

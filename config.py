@@ -29,6 +29,13 @@ DATASET = (
     # 'datasets/financial_log.xes',
 )[0]
 
+# Logging
+LOGGING_FOLDER = "Logs"
+LOG_FILE = os.path.join(LOGGING_FOLDER, "2__test.py.logs")
+
+
+# =============== Functions to get special configurations =================
+
 __dataset_df = None
 def get_dataset_df():
     global __dataset_df
@@ -39,10 +46,9 @@ def get_dataset_df():
         __dataset_df = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
         return __dataset_df
 
+def get_dataset_basename():
+    return os.path.basename(DATASET).split(".")[0]
 
-# Logging
-LOGGING_FOLDER = "Logs"
-LOG_FILE = os.path.join(LOGGING_FOLDER, "2__test.py.logs")
 
 __logger = None
 def get_logger():
