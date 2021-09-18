@@ -63,7 +63,28 @@ class DataframeSaveLoad(ISaveLoad):
 
 
 class LSTMSaveLoad(ISaveLoad):
-            def save(self, obj: torch.nn.Module, path: str):
-                torch.save(obj, path)
-            def load(self, path: str):
-                return torch.load(path)
+    def save(self, obj: torch.nn.Module, path: str):
+        torch.save(obj, path)
+    def load(self, path: str):
+        return torch.load(path)
+
+
+class CTGANCheckpoint(Checkpoint):
+    def __init__(self, dataset_name, epochs, enabled_dp):
+        super().__init__("fitted_models", CTGANSaveLoad(), "ctgan", ".mdl")
+        self.add_info("dataset", dataset_name)
+        self.add_info("epochs", epochs)
+        self.add_info("dp", enabled_dp)
+
+class DataframeCheckpoint(Checkpoint):
+    def __init__(self, dataset_name, epochs, enabled_dp):
+        super().__init__("results", DataframeSaveLoad(), "sampled", ".csv")
+        self.add_info("dataset", dataset_name)
+        self.add_info("epochs", epochs)
+        self.add_info("dp", enabled_dp)
+
+class LSTMCheckpoint(Checkpoint):
+    def __init__(self, dataset_name, epochs):
+        super().__init__("nn_models", LSTMSaveLoad(), "lstm")
+        self.add_info("dataset", dataset_name)
+        self.add_info("epochs", epochs)

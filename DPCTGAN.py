@@ -208,22 +208,20 @@ class MyDataSampler(DataSampler):
         return vec, cleaned_df 
 
     def get_fitted_model(self, batch, data, org_data, epochs):
-        from checkpoint import Checkpoint, LSTMSaveLoad
+        from checkpoint import LSTMCheckpoint
         dataset_name = os.path.basename(self.dataset._dataset).split(".")[0]
-        checkpoint = Checkpoint("nn_models", LSTMSaveLoad(), "")
-        checkpoint.add_info("dataset", dataset_name)
-        checkpoint.add_info("epochs", epochs)
+        cp = LSTMCheckpoint(dataset_name, epochs)
 
         RETRAIN = False
         
         """ Load an already fitted model from file or fit a new one. """
-        if checkpoint.exists() and not RETRAIN:
-            rootLogger.info("Loading trained nn.Model from '{}'".format(checkpoint.save_file))
-            return checkpoint.load()
+        if cp.exists() and not RETRAIN:
+            rootLogger.info("Loading trained nn.Model from '{}'".format(cp.save_file))
+            return cp.load()
         else:
             rootLogger.info("Retraining model...")
             model = self._fit_model(batch, data, org_data, epochs)
-            checkpoint.save(model)
+            cp.save(model)
             return model
 
     def _fit_model(self, batch, data, org_data, epochs):

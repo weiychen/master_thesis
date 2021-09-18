@@ -10,7 +10,7 @@ from DPCTGAN import DPCTGAN
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from sdv.constraints import Positive
 
-from checkpoint import Checkpoint, DataframeSaveLoad, CTGANSaveLoad
+from checkpoint import CTGANCheckpoint, DataframeCheckpoint
 
 # Create folder for logging
 LOGGING_FOLDER = "Logs"
@@ -65,10 +65,8 @@ ENABLED_DP = False
 
 def get_fitted_model():
     """ Load an already fitted model from checkpoint or fit a new one. """
-    cp = Checkpoint("fitted_models", CTGANSaveLoad(), "ctgan", ".mdl")
-    cp.add_info("dataset", os.path.basename(dataset).split(".")[0])
-    cp.add_info("epochs", EPOCHS_CTGAN)
-    cp.add_info("dp", ENABLED_DP)
+    cp = CTGANCheckpoint(
+        os.path.basename(dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP)
 
     if cp.exists() and not RETRAIN_CTGAN:
         rootLogger.info("Loading trained model from '{}'".format(cp.save_file))
@@ -105,10 +103,9 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
 
 
 def save_results(results_df: pd.DataFrame):
-    cp = Checkpoint("results", DataframeSaveLoad(), "sampled", ".csv")
-    cp.add_info("dataset", os.path.basename(dataset).split(".")[0])
-    cp.add_info("epochs", EPOCHS_CTGAN)
-    cp.add_info("dp", ENABLED_DP)
+    cp = DataframeCheckpoint(
+        os.path.basename(dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP
+    )
     cp.save(results_df, override=OVERRIDE_EXISTING_RESULTS)
 
 
