@@ -137,11 +137,12 @@ def main():
         # Activities don't match. Insert the lstm activities for
         # comparison
         rootLogger.info('Activities don\'t match --> make sampled conc')
-        sampled['lstm_activities'] = activities['concept:name'].copy()
+        sampled['lstm_activities'] = activities['concept:name'].values
 
-    # Save the sampled data result to the file specified in the settings
+    # Save the sampled data result
     save_results(sampled)
 
+    rootLogger.info(activities)
     rootLogger.info(data)
     rootLogger.info(sampled)
 
