@@ -14,16 +14,18 @@ class Checkpoint:
 
     def _build_savefile_name(self):
         self.save_file = os.path.join(self.folder_path, self.model_name)
-        for name, value in self.infos.items():
-            self.save_file += f"{value}-{name}"
+        for info in self.infos:
+            value = info["value"]
+            name = info["name"]
+            self.save_file += f"_{name}-{value}"
 
     def exists(self):
         return os.path.exists(self.save_file)
 
     def save(self, obj, save_function, override=False):
         if not self.exists() or override:
-            save_function(model, self.save_file)
+            save_function(obj, self.save_file)
 
-    def load(self, obj, load_function):
+    def load(self, load_function):
         if self.exists():
             return load_function(self.save_file)
