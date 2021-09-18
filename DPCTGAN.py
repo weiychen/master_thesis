@@ -33,9 +33,6 @@ torch.manual_seed(1)
 import logging
 rootLogger = logging.getLogger()
 
-from checkpoint import Checkpoint
-
-
 
 # log = xes_importer.apply('ETM_Configuration2.xes')#('financial_log.xes')
 # dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
@@ -211,8 +208,9 @@ class MyDataSampler(DataSampler):
         return vec, cleaned_df 
 
     def get_fitted_model(self, batch, data, org_data, epochs):
+        from checkpoint import Checkpoint, LSTMSaveLoad
         dataset_name = os.path.basename(self.dataset._dataset).split(".")[0]
-        checkpoint = Checkpoint("nn_models", "")
+        checkpoint = Checkpoint("nn_models", LSTMSaveLoad(), "")
         checkpoint.add_info("dataset", dataset_name)
         checkpoint.add_info("epochs", epochs)
 
@@ -221,11 +219,11 @@ class MyDataSampler(DataSampler):
         """ Load an already fitted model from file or fit a new one. """
         if checkpoint.exists() and not RETRAIN:
             rootLogger.info("Loading trained nn.Model from '{}'".format(checkpoint.save_file))
-            return checkpoint.load(torch.load)
+            return checkpoint.load()
         else:
             rootLogger.info("Retraining model...")
             model = self._fit_model(batch, data, org_data, epochs)
-            checkpoint.save(model, torch.save, override=True)
+            checkpoint.save(model)
             return model
 
     def _fit_model(self, batch, data, org_data, epochs):

@@ -1,4 +1,5 @@
 import os
+import logging
 
 import numpy as np
 import pandas as pd
@@ -9,7 +10,7 @@ from DPCTGAN import DPCTGAN
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from sdv.constraints import Positive
 
-import logging
+from checkpoint import Checkpoint, DataframeSaveLoad, CTGANSaveLoad
 
 # Create folder for logging
 LOGGING_FOLDER = "Logs"
@@ -51,37 +52,27 @@ data = data.fillna(0) ## maybe before training
 rootLogger.info("Finished data loading.")
 
 
-# Create folder for saved pre-fitted models
-MODEL_FOLDER = "fitted_models"
-os.makedirs(MODEL_FOLDER, exist_ok=True) # create folder if not exists
-MODEL_FILE_PATTERN = os.path.join(MODEL_FOLDER, "{}_{}-epochs_dp-{}.mdl")
-RETRAIN = False
-
-# Create folder for saved sampled data (result) for later evaluation
-RESULTS_FOLDER = "results"
-os.makedirs(RESULTS_FOLDER, exist_ok=True)
-RESULTS_FILE_PATTERN = os.path.join(RESULTS_FOLDER, "{}_sampled_{}-epochs_dp-{}.csv")
-OVERRIDE_EXISTING_CSV = True
+# Override existing checkpoints?
+RETRAIN_CTGAN = False
+OVERRIDE_EXISTING_RESULTS = True
 
 # Settings for training and sampling
 BATCH_SIZE = 20
 # EPOCHS_DPLSTM = 40
-EPOCHS_CTGAN = 100
+EPOCHS_CTGAN = 10
 ENABLED_DP = False
 
 
-def save_model(model: CTGAN, path: str, override=False):
-    if not os.path.exists(path) or override:
-        model.save(path)
-
-
 def get_fitted_model():
-    """ Load an already fitted model from file or fit a new one. """
-    dataset_name = os.path.basename(dataset).split(".")[0]
-    model_file = MODEL_FILE_PATTERN.format(dataset_name, EPOCHS_CTGAN, ENABLED_DP)
-    if os.path.exists(model_file) and not RETRAIN:
-        rootLogger.info("Loading trained model from '{}'".format(model_file))
-        ctgan = CTGAN.load(model_file)
+    """ Load an already fitted model from checkpoint or fit a new one. """
+    cp = Checkpoint("fitted_models", CTGANSaveLoad(), "ctgan", ".mdl")
+    cp.add_info("dataset", os.path.basename(dataset).split(".")[0])
+    cp.add_info("epochs", EPOCHS_CTGAN)
+    cp.add_info("dp", ENABLED_DP)
+
+    if cp.exists() and not RETRAIN_CTGAN:
+        rootLogger.info("Loading trained model from '{}'".format(cp.save_file))
+        ctgan = cp.load()
     else:
         rootLogger.info("Retraining model...")
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
@@ -91,7 +82,7 @@ def get_fitted_model():
             dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
             disabled_dp=not ENABLED_DP
         )
-        save_model(ctgan, model_file, override=True)
+        cp.save(ctgan)
     return ctgan
 
 
@@ -114,12 +105,12 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
 
 
 def save_results(results_df: pd.DataFrame):
-    dataset_name = os.path.basename(dataset).split(".")[0]
-    csv_file = RESULTS_FILE_PATTERN.format(dataset_name, EPOCHS_CTGAN, ENABLED_DP)
-    if not os.path.exists(csv_file) or OVERRIDE_EXISTING_CSV:
-        # Save only if file doesn't already exist or override flag set
-        results_df.to_csv(csv_file)
-    
+    cp = Checkpoint("results", DataframeSaveLoad(), "sampled", ".csv")
+    cp.add_info("dataset", os.path.basename(dataset).split(".")[0])
+    cp.add_info("epochs", EPOCHS_CTGAN)
+    cp.add_info("dp", ENABLED_DP)
+    cp.save(results_df, override=OVERRIDE_EXISTING_RESULTS)
+
 
 def main():
     

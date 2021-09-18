@@ -1,13 +1,28 @@
 import os
+import pandas as pd
+from abc import ABC, abstractmethod
+
+import torch
+from sdv.tabular.ctgan import CTGAN
+
+class ISaveLoad(ABC):
+    @abstractmethod
+    def save(self, obj: object, path: str):
+        """ Save the obj to path """
+
+    @abstractmethod
+    def load(self, path: str):
+        """ Save the obj to path """
 
 class Checkpoint:
-    def __init__(self, folder_path: str, model_name: str = "mdl", file_type: str = ".cp"):
+    def __init__(self, folder_path: str, saveload: ISaveLoad, model_name: str = "mdl", file_type: str = ".cp"):
         self.folder_path = folder_path
         os.makedirs(folder_path, exist_ok=True) # create folder if not exists
         self.model_name: str = model_name
         self.file_type: str = file_type
-        self.infos: list = list()
+        self.saveload: ISaveLoad = saveload
         self.save_file: str = model_name
+        self.infos: list = list()
 
     def add_info(self, name: str, value):
         self.infos.append({"name":name, "value": value})
@@ -24,10 +39,31 @@ class Checkpoint:
     def exists(self):
         return os.path.exists(self.save_file)
 
-    def save(self, obj, save_function, override=False):
+    def save(self, obj, override=True):
         if not self.exists() or override:
-            save_function(obj, self.save_file)
+            self.saveload.save(obj, self.save_file)
 
-    def load(self, load_function):
+    def load(self):
         if self.exists():
-            return load_function(self.save_file)
+            return self.saveload.load(self.save_file)
+
+
+class CTGANSaveLoad(ISaveLoad):
+    def save(self, obj: CTGAN, path: str):
+        obj.save(path)
+    def load(self, path: str):
+        return CTGAN.load(path)
+
+
+class DataframeSaveLoad(ISaveLoad):
+    def load(self):
+        raise NotImplementedError("Loading of results file not implemented")
+    def save(self, obj: pd.DataFrame, path: str):
+        obj.to_csv(path)
+
+
+class LSTMSaveLoad(ISaveLoad):
+            def save(self, obj: torch.nn.Module, path: str):
+                torch.save(obj, path)
+            def load(self, path: str):
+                return torch.load(path)
