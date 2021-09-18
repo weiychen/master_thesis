@@ -498,8 +498,9 @@ class DPCTGAN(CTGANSynthesizer):
         # else:
         #     global_condition_vec = None
         rootLogger.info("Generating activities...")
+        EPOCHS_LSTM = 100
         global_condition_vec, activities = self._data_sampler.generate_cond_from_condition_column_info(
-                 self._batch_size, self.data, self.org_data, self._epochs)
+                 self._batch_size, self.data, self.org_data, EPOCHS_LSTM)
         activities_copy = activities.copy()
 
 

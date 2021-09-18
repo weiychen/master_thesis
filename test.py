@@ -64,9 +64,10 @@ RESULTS_FILE_PATTERN = os.path.join(RESULTS_FOLDER, "{}_sampled_{}-epochs_dp-{}.
 OVERRIDE_EXISTING_CSV = True
 
 # Settings for training and sampling
-BATCH_SIZE = 10
-EPOCHS = 10
-ENABLED_DP = True
+BATCH_SIZE = 20
+# EPOCHS_DPLSTM = 40
+EPOCHS_CTGAN = 100
+ENABLED_DP = False
 
 
 def save_model(model: CTGAN, path: str, override=False):
@@ -77,14 +78,14 @@ def save_model(model: CTGAN, path: str, override=False):
 def get_fitted_model():
     """ Load an already fitted model from file or fit a new one. """
     dataset_name = os.path.basename(dataset).split(".")[0]
-    model_file = MODEL_FILE_PATTERN.format(dataset_name, EPOCHS, ENABLED_DP)
+    model_file = MODEL_FILE_PATTERN.format(dataset_name, EPOCHS_CTGAN, ENABLED_DP)
     if os.path.exists(model_file) and not RETRAIN:
         rootLogger.info("Loading trained model from '{}'".format(model_file))
         ctgan = CTGAN.load(model_file)
     else:
         rootLogger.info("Retraining model...")
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
-        ctgan = CTGAN(epochs=EPOCHS, batch_size=BATCH_SIZE, constraints=[pos_constraint])
+        ctgan = CTGAN(epochs=EPOCHS_CTGAN, batch_size=BATCH_SIZE, constraints=[pos_constraint])
         ctgan.fit(
             data, 
             dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
@@ -114,7 +115,7 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
 
 def save_results(results_df: pd.DataFrame):
     dataset_name = os.path.basename(dataset).split(".")[0]
-    csv_file = RESULTS_FILE_PATTERN.format(dataset_name, EPOCHS, ENABLED_DP)
+    csv_file = RESULTS_FILE_PATTERN.format(dataset_name, EPOCHS_CTGAN, ENABLED_DP)
     if not os.path.exists(csv_file) or OVERRIDE_EXISTING_CSV:
         # Save only if file doesn't already exist or override flag set
         results_df.to_csv(csv_file)
