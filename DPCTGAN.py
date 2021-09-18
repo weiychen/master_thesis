@@ -561,8 +561,8 @@ class DPCTGAN(CTGANSynthesizer):
                 # Just continue to see how bad the result actually is.
                 pass
 
-            data = np.concatenate(data, axis=0)
-            transformed = pd.DataFrame(data[:n], columns=["concept:name", "duration"])
+        data = np.concatenate(data, axis=0)
+        transformed = pd.DataFrame(data[:n], columns=["concept:name", "duration"])
         
         return transformed, activities
 
