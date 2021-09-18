@@ -4,6 +4,25 @@ import logging
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.objects.conversion.log import converter as log_converter
 
+# Override existing checkpoints?
+RETRAIN_CTGAN = False
+RETRAIN_LSTM = False
+OVERRIDE_EXISTING_RESULTS = True
+
+# Global parameters
+BATCH_SIZE = 20
+
+# CTGAN
+EPOCHS_CTGAN = 2
+ENABLED_DP = False
+RETRAIN_CTGAN = False
+
+SAMPLING_MATCH_ACTIVITIES_MAX_TRIES = 200
+
+# LSTM
+EPOCHS_DPLSTM = 40
+EPSILON_LSTM_DP = 1.0
+
 # Dataset
 DATASET = (
     'datasets/ETM_Configuration2.xes',

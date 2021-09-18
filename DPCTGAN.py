@@ -207,10 +207,8 @@ class MyDataSampler(DataSampler):
         dataset_name = os.path.basename(self.dataset._dataset).split(".")[0]
         cp = LSTMCheckpoint(dataset_name, epochs)
 
-        RETRAIN = False
-        
         """ Load an already fitted model from file or fit a new one. """
-        if cp.exists() and not RETRAIN:
+        if cp.exists() and not config.RETRAIN_LSTM:
             rootLogger.info("Loading trained nn.Model from '{}'".format(cp.save_file))
             return cp.load()
         else:
@@ -229,7 +227,6 @@ class MyDataSampler(DataSampler):
         # Privacy engine hyper-parameters
         max_per_sample_grad_norm = 1.0
         # delta = 0#8e-5
-        epsilon = 1.0
         secure_rng = False
         sample_rate = batch_size / len(data)
 
@@ -243,7 +240,7 @@ class MyDataSampler(DataSampler):
             sample_rate=sample_rate,
             max_grad_norm=max_per_sample_grad_norm,
         #     target_delta=delta,
-            target_epsilon=epsilon,
+            target_epsilon=config.EPSILON_LSTM_DP,
             epochs=epochs,
         #     secure_rng=secure_rng,
         )
@@ -482,9 +479,8 @@ class DPCTGAN(CTGANSynthesizer):
         # else:
         #     global_condition_vec = None
         rootLogger.info("Generating activities...")
-        EPOCHS_LSTM = 100
         global_condition_vec, activities = self._data_sampler.generate_cond_from_condition_column_info(
-                 self._batch_size, self.data, self.org_data, EPOCHS_LSTM)
+                 self._batch_size, self.data, self.org_data, config.EPOCHS_DPLSTM)
         activities_copy = activities.copy()
 
         self.save("results/CHECKPOINT_after_generate_cond_from_condition_column_info.mdl")
@@ -492,7 +488,6 @@ class DPCTGAN(CTGANSynthesizer):
         rootLogger.info("Generating durations...")
         rootLogger.info(f"Device is: {self.device}")
 
-        MAX_TRIES = 200
         failed = False
 
         fake_batch_size = 4 # self._batch_size
@@ -505,7 +500,7 @@ class DPCTGAN(CTGANSynthesizer):
             activities_copy = activities_copy[fake_batch_size:]
 
             # Iterate until the generated activities match next_activities
-            for j in range(MAX_TRIES):
+            for j in range(config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES):
 
                 mean = torch.zeros(fake_batch_size, self._embedding_dim)
                 std = mean + 1
@@ -526,7 +521,7 @@ class DPCTGAN(CTGANSynthesizer):
                 generated = self._transformer.inverse_transform(fakeact.detach().cpu().numpy())
                 activities_match = generated['concept:name'].values == next_activities['concept:name'].values
                 activities_match = activities_match if isinstance(activities_match, bool) else activities_match.all()
-                last_try = j == MAX_TRIES-1
+                last_try = j == config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES-1
                 if activities_match or last_try:
                     # The generated activities match. Continue with next step
                     data.append(generated)
@@ -538,7 +533,7 @@ class DPCTGAN(CTGANSynthesizer):
                         # rootLogger.info(f"Found activites match after {j+1} tries.")
                         break
                     else:
-                        rootLogger.info(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries...\n"
+                        rootLogger.info(f"\nCouldn't find matching activities vector after {config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES} tries...\n"
                                          "Decrease the batch size or increase number of epochs and try again.")
                         failed = True
                 

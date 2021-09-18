@@ -30,33 +30,22 @@ data = data.fillna(0) ## maybe before training
 rootLogger.info("Finished data loading.")
 
 
-# Override existing checkpoints?
-RETRAIN_CTGAN = False
-OVERRIDE_EXISTING_RESULTS = True
-
-# Settings for training and sampling
-BATCH_SIZE = 20
-# EPOCHS_DPLSTM = 40
-EPOCHS_CTGAN = 2
-ENABLED_DP = False
-
-
 def get_fitted_model():
     """ Load an already fitted model from checkpoint or fit a new one. """
     cp = CTGANCheckpoint(
-        os.path.basename(config.dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP)
+        os.path.basename(config.dataset).split(".")[0], config.EPOCHS_CTGAN, config.ENABLED_DP)
 
-    if cp.exists() and not RETRAIN_CTGAN:
+    if cp.exists() and not config.RETRAIN_CTGAN:
         rootLogger.info("Loading trained model from '{}'".format(cp.save_file))
         ctgan = cp.load()
     else:
         rootLogger.info("Retraining model...")
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
-        ctgan = CTGAN(epochs=EPOCHS_CTGAN, batch_size=BATCH_SIZE, constraints=[pos_constraint])
+        ctgan = CTGAN(epochs=config.EPOCHS_CTGAN, batch_size=config.BATCH_SIZE, constraints=[pos_constraint])
         ctgan.fit(
             data, 
             dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
-            disabled_dp=not ENABLED_DP
+            disabled_dp=not config.ENABLED_DP
         )
         cp.save(ctgan)
     return ctgan
@@ -82,14 +71,12 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
 
 def save_results(results_df: pd.DataFrame):
     cp = DataframeCheckpoint(
-        os.path.basename(config.dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP
+        os.path.basename(config.dataset).split(".")[0], config.EPOCHS_CTGAN, config.ENABLED_DP
     )
-    cp.save(results_df, override=OVERRIDE_EXISTING_RESULTS)
+    cp.save(results_df, override=config.OVERRIDE_EXISTING_RESULTS)
 
 
 def main():
-    
-    discrete_columns = ['concept:name']
     ctgan = get_fitted_model()
 
     rootLogger.info("\n\tSampling model.\n")
