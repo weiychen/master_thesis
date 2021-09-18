@@ -31,7 +31,7 @@ DATASET = (
 
 # Logging
 LOGGING_FOLDER = "Logs"
-LOG_FILE = os.path.join(LOGGING_FOLDER, "2__test.py.logs")
+LOG_FILE = os.path.join(LOGGING_FOLDER, "test.py.logs")
 
 
 # =============== Functions to get special configurations =================
@@ -39,12 +39,10 @@ LOG_FILE = os.path.join(LOGGING_FOLDER, "2__test.py.logs")
 __dataset_df = None
 def get_dataset_df():
     global __dataset_df
-    if __dataset_df is not None:
-        return __dataset_df
-    else:
+    if __dataset_df is None:
         log = xes_importer.apply(DATASET)
         __dataset_df = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
-        return __dataset_df
+    return __dataset_df.copy()
 
 def get_dataset_basename():
     return os.path.basename(DATASET).split(".")[0]
@@ -53,9 +51,7 @@ def get_dataset_basename():
 __logger = None
 def get_logger():
     global __logger
-    if __logger is not None:
-        return __logger
-    else:
+    if __logger is None:
         # Create folder for logging
         os.makedirs(LOGGING_FOLDER, exist_ok=True) # create folder if not exists
 
@@ -70,4 +66,4 @@ def get_logger():
         consoleHandler = logging.StreamHandler()
         consoleHandler.setFormatter(logFormatter)
         __logger.addHandler(consoleHandler)
-        return __logger
+    return __logger
