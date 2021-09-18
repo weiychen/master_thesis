@@ -30,9 +30,9 @@ import opacus
 from tqdm import trange, tqdm
 torch.manual_seed(1)
 
-import logging
-rootLogger = logging.getLogger()
+import config
 
+rootLogger = config.get_logger()
 
 # log = xes_importer.apply('ETM_Configuration2.xes')#('financial_log.xes')
 # dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)

@@ -1,5 +1,4 @@
 import os
-import logging
 
 import numpy as np
 import pandas as pd
@@ -13,22 +12,7 @@ from sdv.constraints import Positive
 from checkpoint import CTGANCheckpoint, DataframeCheckpoint
 import config
 
-# Create folder for logging
-LOGGING_FOLDER = "Logs"
-os.makedirs(LOGGING_FOLDER, exist_ok=True) # create folder if not exists
-LOGGING_FILE = os.path.join(LOGGING_FOLDER, "2__test.py.logs")
-
-logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-rootLogger = logging.getLogger()
-rootLogger.setLevel(logging.INFO)
-
-fileHandler = logging.FileHandler("{}".format(LOGGING_FILE))
-fileHandler.setFormatter(logFormatter)
-rootLogger.addHandler(fileHandler)
-
-consoleHandler = logging.StreamHandler()
-consoleHandler.setFormatter(logFormatter)
-rootLogger.addHandler(consoleHandler)
+rootLogger = config.get_logger()
 
 # import datetime
 rootLogger.info(f"Load data from file '{config.dataset}'")
