@@ -505,6 +505,7 @@ class DPCTGAN(CTGANSynthesizer):
 
         rootLogger.info("Generating durations...")
         rootLogger.info(f"Device is: {self.device}")
+
         MAX_TRIES = 200
         failed = False
         
@@ -516,7 +517,7 @@ class DPCTGAN(CTGANSynthesizer):
             activities_copy = activities_copy[self._batch_size:]
 
             # Iterate until the generated activities match next_activities
-            for j in trange(MAX_TRIES):
+            for j in range(MAX_TRIES):
 
                 mean = torch.zeros(self._batch_size, self._embedding_dim)
                 std = mean + 1
@@ -537,18 +538,18 @@ class DPCTGAN(CTGANSynthesizer):
                 generated = self._transformer.inverse_transform(fakeact.detach().cpu().numpy())
                 activities_match = generated['concept:name'].values == next_activities['concept:name'].values
                 activities_match = activities_match if isinstance(activities_match, bool) else activities_match.all()
-                lastTry = j == MAX_TRIES-1
-                if activities_match or lastTry:
+                last_try = j == MAX_TRIES-1
+                if activities_match or last_try:
                     # The generated activities match. Continue with next step
                     data.append(generated)
 
                     # Remove used entries of global_condition_vec for next iteration step
                     global_condition_vec = global_condition_vec[self._batch_size:]
 
-                    rootLogger.info(f"Found activites match after {j+1} tries.")
+                    if not last_try or activities_match:
+                        # rootLogger.info(f"Found activites match after {j+1} tries.")
                     break
-                    
-                if lastTry:
+                    else:
                     rootLogger.info(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries...\n"
                            "Decrease the batch size or increase number of epochs and try again.")
                     failed = True
