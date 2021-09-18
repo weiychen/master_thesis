@@ -33,6 +33,8 @@ torch.manual_seed(1)
 import logging
 rootLogger = logging.getLogger()
 
+from checkpoint import Checkpoint
+
 
 
 # log = xes_importer.apply('ETM_Configuration2.xes')#('financial_log.xes')
@@ -209,22 +211,19 @@ class MyDataSampler(DataSampler):
         return vec, cleaned_df 
 
     def get_fitted_model(self, batch, data, org_data, epochs):
-        # Create folder for saved nn models
-        MODEL_FOLDER = "nn_models"
-        os.makedirs(MODEL_FOLDER, exist_ok=True) # create folder if not exists
-        MODEL_FILE_PATTERN = os.path.join(MODEL_FOLDER, "{}_{}-epochs.mdl")
-        RETRAIN = False
+        dataset_name = os.path.basename(self.dataset._dataset).split(".")[0]
+        checkpoint = Checkpoint("nn_models", "")
+        checkpoint.add_info("epochs", epochs)
+        checkpoint.add_info("dataset", dataset_name)
         
         """ Load an already fitted model from file or fit a new one. """
-        dataset_name = os.path.basename(self.dataset._dataset).split(".")[0]
-        model_file = MODEL_FILE_PATTERN.format(dataset_name, self.epochs)
-        if os.path.exists(model_file) and not RETRAIN:
+        if checkpoint.exists() and not RETRAIN:
             rootLogger.info("Loading trained nn.Model from '{}'".format(model_file))
-            return self.load_model(model_file)
+            return checkpoint.load(torch.load)
         else:
             rootLogger.info("Retraining model...")
             model = self._fit_model(batch, data, org_data, epochs)
-            self.save_model(model, model_file, override=True)
+            checkpoint.save(model, torch.save, override=True)
             return model
 
     def _fit_model(self, batch, data, org_data, epochs):
@@ -281,14 +280,6 @@ class MyDataSampler(DataSampler):
 
         return model
         
-    def save_model(self, model: Model, path: str, override=False):
-        if not os.path.exists(path) or override:
-            torch.save(model, path)
-
-    def load_model(self, path: str):
-        if os.path.exists(path):
-            return torch.load(path)
-
 
 class DPCTGAN(CTGANSynthesizer):
 
