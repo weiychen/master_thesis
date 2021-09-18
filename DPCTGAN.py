@@ -497,10 +497,14 @@ class DPCTGAN(CTGANSynthesizer):
                 
         # else:
         #     global_condition_vec = None
+        rootLogger.info("Generating activities...")
         global_condition_vec, activities = self._data_sampler.generate_cond_from_condition_column_info(
                  self._batch_size, self.data, self.org_data, self._epochs)
         activities_copy = activities.copy()
 
+
+        rootLogger.info("Generating durations...")
+        rootLogger.info(f"Device is: {self.device}")
         MAX_TRIES = 200
         failed = False
         
