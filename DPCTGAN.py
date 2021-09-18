@@ -153,7 +153,7 @@ class MyDataSampler(DataSampler):
         max_constraint = max(groups['time:timestamp'])
 
         text = 'start'
-        next_words = len(data)*10
+        next_words = len(data)*5
         model.eval()
 
         words = text.split(' ')
@@ -205,7 +205,7 @@ class MyDataSampler(DataSampler):
         # unique_activities = list(activities_pd.columns) 
         # vec = activities_pd[:batch].to_numpy()
         # data = data[batch:]
-        return vec, cleaned_df 
+        return vec, cleaned_df
 
     def get_fitted_model(self, batch, data, org_data, epochs):
         from checkpoint import LSTMCheckpoint
@@ -492,13 +492,14 @@ class DPCTGAN(CTGANSynthesizer):
                  self._batch_size, self.data, self.org_data, EPOCHS_LSTM)
         activities_copy = activities.copy()
 
+        self.save("results/CHECKPOINT_after_generate_cond_from_condition_column_info.mdl")
 
         rootLogger.info("Generating durations...")
         rootLogger.info(f"Device is: {self.device}")
 
         MAX_TRIES = 200
         failed = False
-        
+
         fake_batch_size = 4 # self._batch_size
         
         steps = n // fake_batch_size + 1
@@ -543,7 +544,7 @@ class DPCTGAN(CTGANSynthesizer):
                         break
                     else:
                         rootLogger.info(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries...\n"
-                            "Decrease the batch size or increase number of epochs and try again.")
+                                         "Decrease the batch size or increase number of epochs and try again.")
                         failed = True
                 
             if failed:
