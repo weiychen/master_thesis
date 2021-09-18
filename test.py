@@ -9,27 +9,46 @@ from DPCTGAN import DPCTGAN
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from sdv.constraints import Positive
 
+import logging
+
+# Create folder for logging
+LOGGING_FOLDER = "Logs"
+os.makedirs(LOGGING_FOLDER, exist_ok=True) # create folder if not exists
+LOGGING_FILE = os.path.join(LOGGING_FOLDER, "2__test.py.logs")
+
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+rootLogger = logging.getLogger()
+rootLogger.setLevel(logging.INFO)
+
+fileHandler = logging.FileHandler("{}".format(LOGGING_FILE))
+fileHandler.setFormatter(logFormatter)
+rootLogger.addHandler(fileHandler)
+
+consoleHandler = logging.StreamHandler()
+consoleHandler.setFormatter(logFormatter)
+rootLogger.addHandler(consoleHandler)
+
 dataset = (
     # 'datasets/ETM_Configuration2.xes',
     'datasets/financial_log.xes',
 )[0]
 
 # import datetime
-print(f"Load data from file '{dataset}'")
+rootLogger.info(f"Load data from file '{dataset}'")
 log = xes_importer.apply(dataset)
 dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
 def infer_time(dataframe):
     return -dataframe['time:timestamp'].diff(-1).dt.total_seconds()
-print("Len dataframe:", len(dataframe))
-print("Calculate durations.")
+rootLogger.info("Len dataframe:" + str(len(dataframe)))
+rootLogger.info("Calculate durations.")
 duration= dataframe.groupby('case:concept:name').apply(infer_time)
 dataframe['duration'] = duration.droplevel(0).reset_index(drop = True)
-print("Resetting index.")
+rootLogger.info("Resetting index.")
 dataframe = dataframe.reset_index(drop = True)
 data = dataframe[['concept:name','duration']]
-print("Fill na.")
+rootLogger.info("Fill na.")
 data = data.fillna(0) ## maybe before training
-print("Finished data loading.")
+rootLogger.info("Finished data loading.")
 
 
 # Create folder for saved pre-fitted models
@@ -60,10 +79,10 @@ def get_fitted_model():
     dataset_name = os.path.basename(dataset).split(".")[0]
     model_file = MODEL_FILE_PATTERN.format(dataset_name, EPOCHS, ENABLED_DP)
     if os.path.exists(model_file) and not RETRAIN:
-        print("Loading trained model from '{}'".format(model_file))
+        rootLogger.info("Loading trained model from '{}'".format(model_file))
         ctgan = CTGAN.load(model_file)
     else:
-        print("Retraining model...")
+        rootLogger.info("Retraining model...")
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
         ctgan = CTGAN(epochs=EPOCHS, batch_size=BATCH_SIZE, constraints=[pos_constraint])
         ctgan.fit(
@@ -84,12 +103,12 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
     for i in range(min(len1, len2)):
         try:
             if df1.iloc[i]['concept:name'] != df2.iloc[i]['concept:name']:
-                print("Activity not the same (i={}): {:<2} != {:<2}".format(i, df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']))
+                rootLogger.info("Activity not the same (i={}): {:<2} != {:<2}".format(i, df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']))
                 same = False
         except IndexError:
             # End of one array reached
             break
-    print("Lengths (df1-df2): {}-{}".format(len1, len2))
+    rootLogger.info("Lengths (df1-df2): {}-{}".format(len1, len2))
     return same
 
 
@@ -106,21 +125,21 @@ def main():
     discrete_columns = ['concept:name']
     ctgan = get_fitted_model()
 
-    print("\nSampling model.\n")
+    rootLogger.info("\n\tSampling model.\n")
     sampled, activities = ctgan.sample(len(data))
 
     # TODO: Make sure they have the same activities
     if is_concept_names_equal(activities, sampled):
-        print("equal --> inner join by key with concept:name")
+        rootLogger.info("equal --> inner join by key with concept:name")
         sampled['traces'] = activities['traces'].values
     else:
-        print('not equal --> make sampled conc')
+        rootLogger.info('Activities don\'t match --> make sampled conc')
 
     # Save the sampled data result to the file specified in the settings
     save_results(sampled)
 
-    print(data)
-    print(sampled)
+    rootLogger.info(data)
+    rootLogger.info(sampled)
 
     pass
 

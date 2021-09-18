@@ -27,6 +27,9 @@ import opacus
 from tqdm import trange, tqdm
 torch.manual_seed(1)
 
+import logging
+rootLogger = logging.getLogger()
+
 
 
 # log = xes_importer.apply('ETM_Configuration2.xes')#('financial_log.xes')
@@ -164,10 +167,11 @@ class MyDataSampler(DataSampler):
         )
         privacy_engine.attach(optimizer)
 
-        for epoch in range(max_epochs):
+        rootLogger.info("Sampling activities")
+        for epoch in trange(max_epochs):
             state_h, state_c = model.init_state(sequence_length)
 
-            for batch, (x, y) in enumerate(dataloader):
+            for _batch, (x, y) in enumerate(dataloader):
                 optimizer.zero_grad()
 
                 y_pred, (state_h, state_c) = model(x, (state_h, state_c))
@@ -179,7 +183,7 @@ class MyDataSampler(DataSampler):
                 loss.backward()
                 optimizer.step()
 
-            print({ 'epoch': epoch, 'batch': batch, 'loss': loss.item() })
+            rootLogger.info({ 'epoch': epoch, 'batch': batch, 'loss': loss.item() })
 
         groups = org_data.groupby(['case:concept:name']).count()
         min_constraint = min(groups['time:timestamp'])
@@ -192,13 +196,16 @@ class MyDataSampler(DataSampler):
         words = text.split(' ')
         state_h, state_c = model.init_state(len(words))
 
-        for i in trange(0, next_words):
+        rootLogger.info("Generating words.")
+        for i in trange(next_words):
             x = torch.tensor([[dataset.word_to_index[w] for w in words[i:]]])
             y_pred, (state_h, state_c) = model(x, (state_h, state_c))
             last_word_logits = y_pred[0][-1]
             p = torch.nn.functional.softmax(last_word_logits, dim=0).detach().numpy()
             word_index = np.random.choice(len(last_word_logits), p=p)
             words.append(dataset.index_to_word[word_index])
+
+        rootLogger.info("Formatting words into dataframe.")
         ids = list()
         _words = list()
         list_index = 0
@@ -461,7 +468,7 @@ class DPCTGAN(CTGANSynthesizer):
             activities_copy = activities_copy[self._batch_size:]
 
             # Iterate until the generated activities match next_activities
-            for j in range(MAX_TRIES):
+            for j in trange(MAX_TRIES):
 
                 mean = torch.zeros(self._batch_size, self._embedding_dim)
                 std = mean + 1
@@ -482,19 +489,20 @@ class DPCTGAN(CTGANSynthesizer):
                 generated = self._transformer.inverse_transform(fakeact.detach().cpu().numpy())
                 activities_match = generated['concept:name'].values == next_activities['concept:name'].values
                 activities_match = activities_match if isinstance(activities_match, bool) else activities_match.all()
-                if activities_match:
+                lastTry = j == MAX_TRIES-1
+                if activities_match or lastTry:
                     # The generated activities match. Continue with next step
                     data.append(generated)
 
                     # Remove used entries of global_condition_vec for next iteration step
                     global_condition_vec = global_condition_vec[self._batch_size:]
 
-                    print(f"Found activites match after {j+1} tries.")
+                    rootLogger.info(f"Found activites match after {j+1} tries.")
                     break
                     
-                if j == MAX_TRIES-1:
-                    print(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries... ")
-                    print("Decrease the batch size or increase number of epochs and try again.")
+                if lastTry:
+                    rootLogger.info(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries...\n"
+                           "Decrease the batch size or increase number of epochs and try again.")
                     failed = True
             if failed:
                 break
