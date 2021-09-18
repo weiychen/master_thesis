@@ -133,7 +133,10 @@ def main():
         rootLogger.info("equal --> inner join by key with concept:name")
         sampled['traces'] = activities['traces'].values
     else:
+        # Activities don't match. Insert the lstm activities for
+        # comparison
         rootLogger.info('Activities don\'t match --> make sampled conc')
+        sampled['lstm_activities'] = activities['concept:name'].copy()
 
     # Save the sampled data result to the file specified in the settings
     save_results(sampled)
