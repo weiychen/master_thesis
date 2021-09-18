@@ -550,11 +550,11 @@ class DPCTGAN(CTGANSynthesizer):
 
                     if not last_try or activities_match:
                         # rootLogger.info(f"Found activites match after {j+1} tries.")
-                    break
+                        break
                     else:
-                    rootLogger.info(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries...\n"
-                           "Decrease the batch size or increase number of epochs and try again.")
-                    failed = True
+                        rootLogger.info(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries...\n"
+                            "Decrease the batch size or increase number of epochs and try again.")
+                        failed = True
                 
             if failed:
                 # break
