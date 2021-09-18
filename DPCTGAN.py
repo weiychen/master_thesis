@@ -552,14 +552,14 @@ class DPCTGAN(CTGANSynthesizer):
                     rootLogger.info(f"\nCouldn't find matching activities vector after {MAX_TRIES} tries...\n"
                            "Decrease the batch size or increase number of epochs and try again.")
                     failed = True
+                
             if failed:
-                break
+                # break
+                # Just continue to see how bad the result actually is.
+                pass
 
-        if not failed:
             data = np.concatenate(data, axis=0)
             transformed = pd.DataFrame(data[:n], columns=["concept:name", "duration"])
-        else:
-            transformed = pd.DataFrame([], columns=["concept:name", "duration"])
         
         return transformed, activities
 
