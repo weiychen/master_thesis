@@ -116,4 +116,14 @@ tutorials/**/*metadata.json
 notebooks
 tests/readme_test
 
-*.mdl
+
+datasets/
+fitted_models/
+nn_models/
+results/
+Logs/
+nohup.out
+
+include/
+*.whl
+Anaconda3-4.4.0-Linux-x86_64.sh
