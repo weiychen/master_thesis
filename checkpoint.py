@@ -1,10 +1,11 @@
 import os
 
 class Checkpoint:
-    def __init__(self, folder_path: str, model_name: str = "mdl"):
+    def __init__(self, folder_path: str, model_name: str = "mdl", file_type: str = ".cp"):
         self.folder_path = folder_path
         os.makedirs(folder_path, exist_ok=True) # create folder if not exists
         self.model_name: str = model_name
+        self.file_type: str = file_type
         self.infos: list = list()
         self.save_file: str = model_name
 
@@ -18,6 +19,7 @@ class Checkpoint:
             value = info["value"]
             name = info["name"]
             self.save_file += f"_{name}-{value}"
+        self.save_file += self.file_type
 
     def exists(self):
         return os.path.exists(self.save_file)
