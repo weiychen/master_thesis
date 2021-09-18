@@ -54,13 +54,11 @@ class CTGANSaveLoad(ISaveLoad):
     def load(self, path: str):
         return CTGAN.load(path)
 
-
 class DataframeSaveLoad(ISaveLoad):
-    def load(self):
-        raise NotImplementedError("Loading of results file not implemented")
     def save(self, obj: pd.DataFrame, path: str):
         obj.to_csv(path)
-
+    def load(self, path: str):
+        return pd.read_csv(path, index_col=0)
 
 class LSTMSaveLoad(ISaveLoad):
     def save(self, obj: torch.nn.Module, path: str):
