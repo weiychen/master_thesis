@@ -468,10 +468,9 @@ class DPCTGAN(CTGANSynthesizer):
                 loss_g.backward()
                 optimizerG.step()
 
-            if self._verbose:
-                print(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
-                        f"Loss D: {loss_d.detach().cpu(): .4f}",
-                        flush=True)
+            if self.verbose:
+                rootLogger.info(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
+                                f"Loss D: {loss_d.detach().cpu(): .4f}")
 
     def sample(self, n, condition_column=None, condition_value=None):
         """Sample data similar to the training data.
