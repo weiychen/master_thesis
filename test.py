@@ -11,6 +11,7 @@ from pm4py.objects.log.importer.xes import importer as xes_importer
 from sdv.constraints import Positive
 
 from checkpoint import CTGANCheckpoint, DataframeCheckpoint
+import config
 
 # Create folder for logging
 LOGGING_FOLDER = "Logs"
@@ -29,14 +30,9 @@ consoleHandler = logging.StreamHandler()
 consoleHandler.setFormatter(logFormatter)
 rootLogger.addHandler(consoleHandler)
 
-dataset = (
-    # 'datasets/ETM_Configuration2.xes',
-    'datasets/financial_log.xes',
-)[0]
-
 # import datetime
-rootLogger.info(f"Load data from file '{dataset}'")
-log = xes_importer.apply(dataset)
+rootLogger.info(f"Load data from file '{config.dataset}'")
+log = xes_importer.apply(config.dataset)
 dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
 def infer_time(dataframe):
     return -dataframe['time:timestamp'].diff(-1).dt.total_seconds()
@@ -59,14 +55,14 @@ OVERRIDE_EXISTING_RESULTS = True
 # Settings for training and sampling
 BATCH_SIZE = 20
 # EPOCHS_DPLSTM = 40
-EPOCHS_CTGAN = 10
+EPOCHS_CTGAN = 2
 ENABLED_DP = False
 
 
 def get_fitted_model():
     """ Load an already fitted model from checkpoint or fit a new one. """
     cp = CTGANCheckpoint(
-        os.path.basename(dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP)
+        os.path.basename(config.dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP)
 
     if cp.exists() and not RETRAIN_CTGAN:
         rootLogger.info("Loading trained model from '{}'".format(cp.save_file))
@@ -104,7 +100,7 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
 
 def save_results(results_df: pd.DataFrame):
     cp = DataframeCheckpoint(
-        os.path.basename(dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP
+        os.path.basename(config.dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP
     )
     cp.save(results_df, override=OVERRIDE_EXISTING_RESULTS)
 
