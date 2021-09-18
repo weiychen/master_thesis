@@ -509,23 +509,25 @@ class DPCTGAN(CTGANSynthesizer):
         MAX_TRIES = 200
         failed = False
         
-        steps = n // self._batch_size + 1
+        fake_batch_size = 4 # self._batch_size
+        
+        steps = n // fake_batch_size + 1
         data = []
         for i in trange(steps):
 
-            next_activities = activities_copy[:self._batch_size]
-            activities_copy = activities_copy[self._batch_size:]
+            next_activities = activities_copy[:fake_batch_size]
+            activities_copy = activities_copy[fake_batch_size:]
 
             # Iterate until the generated activities match next_activities
             for j in range(MAX_TRIES):
 
-                mean = torch.zeros(self._batch_size, self._embedding_dim)
+                mean = torch.zeros(fake_batch_size, self._embedding_dim)
                 std = mean + 1
                 fakez = torch.normal(mean=mean, std=std).to(self._device)
 
                 if global_condition_vec is not None:
-                    condvec = global_condition_vec[:self._batch_size]
-                    if len(condvec) != self._batch_size:
+                    condvec = global_condition_vec[:fake_batch_size]
+                    if len(condvec) != fake_batch_size:
                         fakez = fakez[:len(condvec)]
 
                 c1 = condvec # One-Hot Encoding Vector
@@ -544,7 +546,7 @@ class DPCTGAN(CTGANSynthesizer):
                     data.append(generated)
 
                     # Remove used entries of global_condition_vec for next iteration step
-                    global_condition_vec = global_condition_vec[self._batch_size:]
+                    global_condition_vec = global_condition_vec[fake_batch_size:]
 
                     if not last_try or activities_match:
                         # rootLogger.info(f"Found activites match after {j+1} tries.")
