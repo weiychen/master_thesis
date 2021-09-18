@@ -2,11 +2,9 @@ import os
 
 import numpy as np
 import pandas as pd
-from pm4py.objects.conversion.log import converter as log_converter
 from ctgan.synthesizers.ctgan import CTGANSynthesizer
 from sdv.tabular.ctgan import CTGAN
 from DPCTGAN import DPCTGAN
-from pm4py.objects.log.importer.xes import importer as xes_importer
 from sdv.constraints import Positive
 
 from checkpoint import CTGANCheckpoint, DataframeCheckpoint
@@ -16,8 +14,8 @@ rootLogger = config.get_logger()
 
 # import datetime
 rootLogger.info(f"Load data from file '{config.dataset}'")
-log = xes_importer.apply(config.dataset)
-dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
+
+dataframe = config.get_dataset_df()
 def infer_time(dataframe):
     return -dataframe['time:timestamp'].diff(-1).dt.total_seconds()
 rootLogger.info("Len dataframe:" + str(len(dataframe)))

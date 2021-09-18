@@ -101,12 +101,7 @@ class Dataset(torch.utils.data.Dataset):
         self.words_indexes = [self.word_to_index[w] for w in self.words]
 
     def load_words(self):
-        self._dataset = (
-            # 'datasets/ETM_Configuration2.xes',
-            'datasets/financial_log.xes',
-        )[0]
-        log = xes_importer.apply(self._dataset)
-        dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
+        dataframe = config.get_dataset_df()
         series = dataframe.groupby('case:concept:name')['concept:name'].apply(list)
         test = []
         for s in series.values:

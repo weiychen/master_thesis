@@ -1,10 +1,25 @@
 import os
 import logging
 
-dataset = (
-    # 'datasets/ETM_Configuration2.xes',
-    'datasets/financial_log.xes',
+from pm4py.objects.log.importer.xes import importer as xes_importer
+from pm4py.objects.conversion.log import converter as log_converter
+
+# Dataset
+DATASET = (
+    'datasets/ETM_Configuration2.xes',
+    # 'datasets/financial_log.xes',
 )[0]
+
+__dataset_df = None
+def get_dataset_df():
+    global __dataset_df
+    if __dataset_df is not None:
+        return __dataset_df
+    else:
+        log = xes_importer.apply(DATASET)
+        __dataset_df = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
+        return __dataset_df
+
 
 # Logging
 LOGGING_FOLDER = "Logs"
