@@ -12,12 +12,12 @@ OVERRIDE_EXISTING_RESULTS = True
 BATCH_SIZE = 20
 
 # CTGAN
-EPOCHS_CTGAN = 20
+EPOCHS_CTGAN = 100
 ENABLED_DP = False
 RETRAIN_CTGAN = False
 
-SAMPLING_BATCH_SIZE = 4 # Set to None to use global BATCH_SIZE
-SAMPLING_MATCH_ACTIVITIES_MAX_TRIES = 2000
+SAMPLING_BATCH_SIZE = 2 # Set to None to use global BATCH_SIZE
+SAMPLING_MATCH_ACTIVITIES_MAX_TRIES = 250
 
 # LSTM
 EPOCHS_DPLSTM = 40
@@ -25,8 +25,8 @@ EPSILON_LSTM_DP = 1.0
 
 # Dataset
 DATASET = (
-    'datasets/ETM_Configuration2.xes',
-    # 'datasets/financial_log.xes',
+    # 'datasets/ETM_Configuration2.xes',
+    'datasets/financial_log.xes',
 )[0]
 
 # Logging
