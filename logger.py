@@ -1,7 +1,11 @@
 import os
+import time
 import logging
 
 import config
+
+def get_log_time_str():
+    return time.strftime("%Y-%m-%d_%H%M%S", time.localtime())
 
 __logger = None
 def get_logger():
@@ -10,11 +14,11 @@ def get_logger():
         # Create folder for logging
         os.makedirs(config.LOGGING_FOLDER, exist_ok=True) # create folder if not exists
 
-        logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+        logFormatter = logging.Formatter("%(asctime)s [%(levelname)-5.5s]  %(message)s")
         __logger = logging.getLogger()
         __logger.setLevel(logging.INFO)
 
-        fileHandler = logging.FileHandler("{}".format(config.LOG_FILE))
+        fileHandler = logging.FileHandler(config.LOG_FILE.format(datetime=get_log_time_str()))
         fileHandler.setFormatter(logFormatter)
         __logger.addHandler(fileHandler)
 
@@ -34,7 +38,7 @@ def get_summary_logger():
         __summary_logger = logging.getLogger("summary_logger")
         __summary_logger.setLevel(logging.INFO)
 
-        fileHandler = logging.FileHandler("{}".format(config.SUMMARY_LOG_FILE), mode='w')
+        fileHandler = logging.FileHandler(config.SUMMARY_LOG_FILE.format(datetime=get_log_time_str()))
         fileHandler.setFormatter(logFormatter)
         __summary_logger.addHandler(fileHandler)
 

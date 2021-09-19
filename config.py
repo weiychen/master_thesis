@@ -31,8 +31,8 @@ DATASET = (
 
 # Logging
 LOGGING_FOLDER = "Logs"
-LOG_FILE = os.path.join(LOGGING_FOLDER, "test.py.logs")
-SUMMARY_LOG_FILE = os.path.join(LOGGING_FOLDER, "summary.log")
+LOG_FILE = os.path.join(LOGGING_FOLDER, "{datetime}_test.py.logs")
+SUMMARY_LOG_FILE = os.path.join(LOGGING_FOLDER, "{datetime}_summary.log")
 
 
 # =============== Functions to get special configurations =================
