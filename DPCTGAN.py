@@ -135,8 +135,11 @@ duplicate reading
 class MyDataSampler(DataSampler):
 
     def generate_cond_from_condition_column_info(self, batch, data, org_data, epochs):
-        """ Generate fake activities sequence (inlcuding trace). 
-        E.g. A, B, D1,... """
+        """ This method generates the fake activities sequence inlcuding traces. It samples
+        the model previously generated in the method 'get_fitted_model' and sorts the result
+        into a dataframe, which is then returned.
+        The returned dataframe is guaranteed to have the same number of rows as the original.
+        """
         self.dataset = Dataset()
         self.epochs = epochs
 
@@ -202,6 +205,14 @@ class MyDataSampler(DataSampler):
         return vec, cleaned_df
 
     def get_fitted_model(self, batch, data, org_data, epochs):
+        """ The function MyDataSampler.get_fitted_model uses a LSTM Checkpoint (see chapter
+        about checkpoints), to load a trained DPLSTM model if one is available with the desired
+        hyperparameters, or train a new one if none is available. The function then returns the
+        trained DPLSTM model.
+
+        This function logs wether a pre-trained model was loaded or a new one was generated.
+        """
+
         from checkpoint import LSTMCheckpoint
         cp = LSTMCheckpoint(config.get_dataset_basename(), epochs, config.EPSILON_LSTM_DP)
 
@@ -216,7 +227,13 @@ class MyDataSampler(DataSampler):
             cp.save(model)
             return model
 
-    def _fit_model(self, batch, data, org_data, epochs):
+    def _fit_model(self, batch, data, org_data, epochs) -> Model:
+        """ The function MyDataSampler._fit_model instantiates the torch.nn.Model, which is
+        a DPLSTM model.
+        An opacus PrivacyEngine is attached to that model and a Adam optimizer is used. The
+        loss criterion is cross entropy loss.
+        The model is trained using the hyperparameters defined in 'config.py'.
+        """
         model = Model(self.dataset)
         model.train()
         batch_size = 10#50
@@ -229,7 +246,7 @@ class MyDataSampler(DataSampler):
         secure_rng = False
         sample_rate = batch_size / len(data)
 
-        dataloader = DataLoader(self.dataset, batch_size=batch_size,drop_last = True)
+        dataloader = DataLoader(self.dataset, batch_size=batch_size, drop_last=True)
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.008)
 
@@ -535,8 +552,7 @@ class DPCTGAN(CTGANSynthesizer):
                         # logger.log(f"Found activites match after {j+1} tries.", summary=True, main_logfile=False)
                         break
                     else:
-                        logger.log(f"\nCouldn't find matching activities vector after {config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES} tries...\n"
-                                    "Decrease the batch size or increase number of epochs and try again.", summary=True)
+                        logger.log(f"\nCouldn't find matching activities vector after {config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES} tries.", summary=True)
                         failed = True
                 
             if failed:
