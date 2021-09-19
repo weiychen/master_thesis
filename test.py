@@ -9,26 +9,26 @@ from sdv.constraints import Positive
 
 from checkpoint import CTGANCheckpoint, DataframeCheckpoint
 import config
+import logger
 
-config.log("Logging main parameter summary:", True, True)
-config.log_parameter_summary(True, True)
+logger.log_parameter_summary(True, True)
 
 # import datetime
-config.log(f"Load data from file '{config.DATASET}'", summary=True)
+logger.log(f"Load data from file '{config.DATASET}'", summary=True)
 
 dataframe = config.get_dataset_df()
 def infer_time(dataframe):
     return -dataframe['time:timestamp'].diff(-1).dt.total_seconds()
-config.log("Len dataframe:" + str(len(dataframe)), summary=True)
-config.log("Calculate durations.")
+logger.log("Len dataframe:" + str(len(dataframe)), summary=True)
+logger.log("Calculate durations.")
 duration= dataframe.groupby('case:concept:name').apply(infer_time)
 dataframe['duration'] = duration.droplevel(0).reset_index(drop = True)
-config.log("Resetting index.")
+logger.log("Resetting index.")
 dataframe = dataframe.reset_index(drop = True)
 data = dataframe[['concept:name','duration']]
-config.log("Fill na.")
+logger.log("Fill na.")
 data = data.fillna(0) ## maybe before training
-config.log("Finished data loading.")
+logger.log("Finished data loading.")
 
 
 def get_fitted_model():
@@ -37,10 +37,10 @@ def get_fitted_model():
         config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP)
 
     if cp.exists() and not config.RETRAIN_CTGAN:
-        config.log("Loading trained CTGAN model from '{}'".format(cp.save_file), summary=True)
+        logger.log("Loading trained CTGAN model from '{}'".format(cp.save_file), summary=True)
         ctgan = cp.load()
     else:
-        config.log("Retraining model...", summary=True)
+        logger.log("Retraining model...", summary=True)
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
         ctgan = CTGAN(epochs=config.EPOCHS_CTGAN, batch_size=config.BATCH_SIZE, constraints=[pos_constraint])
         ctgan.fit(
@@ -64,7 +64,7 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
     for i in range(min(len1, len2)):
         try:
             if df1.iloc[i]['concept:name'] != df2.iloc[i]['concept:name']:
-                config.log("Activity not the same (i={}): {:<2} != {:<2}".format(i, df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']), summary=True)
+                logger.log("Activity not the same (i={}): {:<2} != {:<2}".format(i, df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']), summary=True)
                 num_no_match += 1
                 same = False
             else:
@@ -72,10 +72,12 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
         except IndexError:
             # End of one array reached
             break
-    config.log("Lengths (df1-df2): {}-{}".format(len1, len2))
+    logger.log("Lengths (df1-df2): {}-{}".format(len1, len2))
     total = num_match+num_no_match
     perc_match = num_match / total * 100
-    config.log("{} ({:.1f}%) of {} activities matched. {} didn't match.".format(num_match, perc_match, total, num_no_match), summary=True)
+    logger.sep(True, True)
+    logger.log("{} ({:.1f}%) of {} activities matched. {} didn't match.".format(num_match, perc_match, total, num_no_match), summary=True)
+    logger.sep(True, True)
     return same
 
 
@@ -89,25 +91,25 @@ def save_results(results_df: pd.DataFrame):
 def main():
     ctgan = get_fitted_model()
 
-    config.log("\n\tSampling model.\n")
+    logger.log("\n\tSampling model.\n")
     sampled, activities = ctgan.sample(len(data))
 
     # TODO: Make sure they have the same activities
     if is_concept_names_equal(activities, sampled):
-        config.log("equal --> inner join by key with concept:name")
+        logger.log("equal --> inner join by key with concept:name")
         sampled['traces'] = activities['traces'].values
     else:
         # Activities don't match. Insert the lstm activities for
         # comparison
-        config.log('Activities don\'t match --> make sampled conc')
+        logger.log('Activities don\'t match --> make sampled conc')
         sampled['lstm_activities'] = activities['concept:name'].values
 
     # Save the sampled data result
     save_results(sampled)
 
-    config.log(activities, summary=True)
-    config.log(data, summary=True)
-    config.log(sampled, summary=True)
+    logger.log(activities, summary=True)
+    logger.log(data, summary=True)
+    logger.log(sampled, summary=True)
 
     pass
 
