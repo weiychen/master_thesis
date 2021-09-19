@@ -203,7 +203,7 @@ class MyDataSampler(DataSampler):
 
     def get_fitted_model(self, batch, data, org_data, epochs):
         from checkpoint import LSTMCheckpoint
-        cp = LSTMCheckpoint(config.get_dataset_basename(), epochs)
+        cp = LSTMCheckpoint(config.get_dataset_basename(), epochs, config.EPSILON_LSTM_DP)
 
         """ Load an already fitted model from file or fit a new one. """
         if cp.exists() and not config.RETRAIN_LSTM:

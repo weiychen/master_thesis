@@ -82,7 +82,8 @@ class DataframeCheckpoint(Checkpoint):
         self.add_info("dp", enabled_dp)
 
 class LSTMCheckpoint(Checkpoint):
-    def __init__(self, dataset_name, epochs):
+    def __init__(self, dataset_name, epochs, epsilon: str):
         super().__init__("nn_models", LSTMSaveLoad(), "lstm")
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
+        self.add_info("eps", epsilon)
