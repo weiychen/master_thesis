@@ -210,7 +210,8 @@ class MyDataSampler(DataSampler):
             logger.log("Loading trained nn.Model from '{}'".format(cp.save_file), summary=True)
             return cp.load()
         else:
-            logger.log("Retraining model...", summary=True)
+            logger.log("Checkpoint file does not exist: {}".format(cp.save_file), summary=True)
+            logger.log("Resampling activities (nn.Model)...", summary=True)
             model = self._fit_model(batch, data, org_data, epochs)
             cp.save(model)
             return model

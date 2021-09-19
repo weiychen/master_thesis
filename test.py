@@ -13,9 +13,7 @@ import logger
 
 logger.log_parameter_summary(True, True)
 
-# import datetime
-logger.log(f"Load data from file '{config.DATASET}'", summary=True)
-
+logger.log(f"Load data from file '{config.DATASET}'")
 dataframe = config.get_dataset_df()
 def infer_time(dataframe):
     return -dataframe['time:timestamp'].diff(-1).dt.total_seconds()
@@ -40,7 +38,8 @@ def get_fitted_model():
         logger.log("Loading trained CTGAN model from '{}'".format(cp.save_file), summary=True)
         ctgan = cp.load()
     else:
-        logger.log("Retraining model...", summary=True)
+        logger.log("Checkpoint file does not exist: {}".format(cp.save_file), summary=True)
+        logger.log("Retraining CTGAN model...", summary=True)
         pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
         ctgan = CTGAN(epochs=config.EPOCHS_CTGAN, batch_size=config.BATCH_SIZE, constraints=[pos_constraint])
         ctgan.fit(
