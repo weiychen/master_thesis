@@ -55,17 +55,26 @@ def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
     len1 = len(df1['concept:name'])
     len2 = len(df2['concept:name'])
 
+    num_match = 0
+    num_no_match = 0
+
     # print names for debugging
     same = len1 == len2
     for i in range(min(len1, len2)):
         try:
             if df1.iloc[i]['concept:name'] != df2.iloc[i]['concept:name']:
-                rootLogger.info("Activity not the same (i={}): {:<2} != {:<2}".format(i, df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']))
+                config.log("Activity not the same (i={}): {:<2} != {:<2}".format(i, df1.iloc[i]['concept:name'], df2.iloc[i]['concept:name']), summary=True)
+                num_no_match += 1
                 same = False
+            else:
+                num_match += 1
         except IndexError:
             # End of one array reached
             break
     rootLogger.info("Lengths (df1-df2): {}-{}".format(len1, len2))
+    total = num_match+num_no_match
+    perc_match = num_match / total * 100
+    rootLogger.info("{} ({:.1f}%) of {} activities matched. {} didn't match.".format(num_match, perc_match, total, num_no_match))
     return same
 
 
