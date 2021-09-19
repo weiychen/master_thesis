@@ -32,8 +32,6 @@ torch.manual_seed(1)
 
 import config
 
-rootLogger = config.get_logger()
-
 # log = xes_importer.apply('ETM_Configuration2.xes')#('financial_log.xes')
 # dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
 # def infer_time(dataframe):
@@ -154,7 +152,7 @@ class MyDataSampler(DataSampler):
         words = text.split(' ')
         state_h, state_c = model.init_state(len(words))
 
-        rootLogger.info("Generating words.")
+        config.log("Generating words.")
         for i in trange(next_words):
             x = torch.tensor([[self.dataset.word_to_index[w] for w in words[i:]]])
             y_pred, (state_h, state_c) = model(x, (state_h, state_c))
@@ -163,7 +161,7 @@ class MyDataSampler(DataSampler):
             word_index = np.random.choice(len(last_word_logits), p=p)
             words.append(self.dataset.index_to_word[word_index])
 
-        rootLogger.info("Formatting words into dataframe.")
+        config.log("Formatting words into dataframe.")
         ids = list()
         _words = list()
         list_index = 0
@@ -208,10 +206,10 @@ class MyDataSampler(DataSampler):
 
         """ Load an already fitted model from file or fit a new one. """
         if cp.exists() and not config.RETRAIN_LSTM:
-            rootLogger.info("Loading trained nn.Model from '{}'".format(cp.save_file))
+            config.log("Loading trained nn.Model from '{}'".format(cp.save_file), summary=True)
             return cp.load()
         else:
-            rootLogger.info("Retraining model...")
+            config.log("Retraining model...", summary=True)
             model = self._fit_model(batch, data, org_data, epochs)
             cp.save(model)
             return model
@@ -245,7 +243,7 @@ class MyDataSampler(DataSampler):
         )
         privacy_engine.attach(optimizer)
 
-        rootLogger.info("Sampling activities")
+        config.log("Sampling activities")
         epochs_info = list()
         for epoch in trange(max_epochs):
             state_h, state_c = model.init_state(sequence_length)
@@ -265,7 +263,7 @@ class MyDataSampler(DataSampler):
             epochs_info.append({ 'epoch': epoch, 'batch': batch, 'loss': loss.item() })
         
         for info in epochs_info:
-            rootLogger.info(info)
+            config.log(info, summary=True)
 
         return model
         
@@ -450,7 +448,7 @@ class DPCTGAN(CTGANSynthesizer):
                 optimizerG.step()
 
             if self.verbose:
-                rootLogger.info(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
+                config.log(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
                                 f"Loss D: {loss_d.detach().cpu(): .4f}")
 
     def sample(self, n, condition_column=None, condition_value=None):
@@ -477,15 +475,15 @@ class DPCTGAN(CTGANSynthesizer):
                 
         # else:
         #     global_condition_vec = None
-        rootLogger.info("Generating activities...")
+        config.log("Generating activities...")
         global_condition_vec, activities = self._data_sampler.generate_cond_from_condition_column_info(
                  self._batch_size, self.data, self.org_data, config.EPOCHS_DPLSTM)
         activities_copy = activities.copy()
 
         self.save("results/CHECKPOINT_after_generate_cond_from_condition_column_info.mdl")
 
-        rootLogger.info("Generating durations...")
-        rootLogger.info(f"Device is: {self.device}")
+        config.log("Generating durations...")
+        config.log(f"Sampling device is: {self.device}", summary=True)
 
         failed = False
 
@@ -532,11 +530,11 @@ class DPCTGAN(CTGANSynthesizer):
                     global_condition_vec = global_condition_vec[fake_batch_size:]
 
                     if not last_try or activities_match:
-                        # rootLogger.info(f"Found activites match after {j+1} tries.")
+                        # config.log(f"Found activites match after {j+1} tries.", summary=True, main_logfile=False)
                         break
                     else:
-                        rootLogger.info(f"\nCouldn't find matching activities vector after {config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES} tries...\n"
-                                         "Decrease the batch size or increase number of epochs and try again.")
+                        config.log(f"\nCouldn't find matching activities vector after {config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES} tries...\n"
+                                    "Decrease the batch size or increase number of epochs and try again.", summary=True)
                         failed = True
                 
             if failed:
