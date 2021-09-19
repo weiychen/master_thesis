@@ -489,7 +489,10 @@ class DPCTGAN(CTGANSynthesizer):
 
         failed = False
 
-        fake_batch_size = 4 # self._batch_size
+        if config.SAMPLING_BATCH_SIZE is not None:
+            fake_batch_size = config.SAMPLING_BATCH_SIZE
+        else:
+            fake_batch_size = self._batch_size
         
         steps = n // fake_batch_size + 1
         data = []
