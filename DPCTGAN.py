@@ -198,13 +198,13 @@ class MyDataSampler(DataSampler):
             cleaned_df=cleaned_df.append(df[df.id == id])  
         cleaned_df = cleaned_df.rename(columns={"word": "concept:name","id":"traces"})    
 
+        activities_pd = pd.get_dummies(cleaned_df['concept:name'])
 
         dataframe = config.get_dataset_df()
-        cleaned_df = cleaned_df[dataframe['concept:name'].to_numpy()]
+        activities_pd = activities_pd[data['concept:name'].to_numpy()]
 
-
-        activities_pd = pd.get_dummies(cleaned_df['concept:name'], prefix='Activity')
         vec = activities_pd.to_numpy()
+
         # unique_activities = list(activities_pd.columns) 
         # vec = activities_pd[:batch].to_numpy()
         # data = data[batch:]
