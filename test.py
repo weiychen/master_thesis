@@ -49,7 +49,7 @@ def get_fitted_model(data: pd.DataFrame, dataframe: pd.DataFrame) -> CTGAN:
     The function logs wether a pre-trained model was loaded or a new one was generated.
     """
     cp = CTGANCheckpoint(
-        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP)
+        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP, "{:.1f}".format(config.EPSILON_CTGAN))
 
     if cp.exists() and not config.RETRAIN_CTGAN:
         logger.log("Loading trained CTGAN model from '{}'".format(cp.save_file), summary=True)

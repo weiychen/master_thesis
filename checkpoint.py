@@ -87,11 +87,12 @@ class LSTMSaveLoad(ISaveLoad):
 
 
 class CTGANCheckpoint(Checkpoint):
-    def __init__(self, dataset_name, epochs, enabled_dp):
+    def __init__(self, dataset_name, epochs, enabled_dp, epsilon):
         super().__init__("fitted_models", CTGANSaveLoad(), "ctgan", ".mdl")
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
+        self.add_info("eps", epsilon)
 
 class DataframeCheckpoint(Checkpoint):
     def __init__(self, dataset_name, epochs, enabled_dp):

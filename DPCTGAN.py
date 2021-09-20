@@ -220,7 +220,7 @@ class MyDataSampler(DataSampler):
         """
 
         from checkpoint import LSTMCheckpoint
-        cp = LSTMCheckpoint(config.get_dataset_basename(), epochs, config.EPSILON_LSTM_DP)
+        cp = LSTMCheckpoint(config.get_dataset_basename(), epochs, "{:.1f}".format(config.EPSILON_LSTM_DP))
 
         """ Load an already fitted model from file or fit a new one. """
         if cp.exists() and not config.RETRAIN_LSTM:
@@ -314,7 +314,7 @@ class DPCTGAN(CTGANSynthesizer):
         self.disabled_dp = disabled_dp
         self.target_delta = None#target_delta
         self.max_per_sample_grad_norm = 1#max_per_sample_grad_norm
-        self.epsilon = 2 #epsilon
+        self.epsilon = config.EPSILON_CTGAN #epsilon
         self.epsilon_list = []
         self.alpha_list = []
         self.loss_d_list = []
