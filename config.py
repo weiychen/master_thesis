@@ -19,20 +19,21 @@ BATCH_SIZE = 20
 
 # CTGAN
 EPOCHS_CTGAN = 100
-ENABLED_DP = False
+ENABLED_DP = True
 RETRAIN_CTGAN = False
 
-SAMPLING_BATCH_SIZE = 2 # Set to None to use global BATCH_SIZE
+SAMPLING_BATCH_SIZE = None # Set to None to use global BATCH_SIZE
 SAMPLING_MATCH_ACTIVITIES_MAX_TRIES = 250
 
 # LSTM
-EPOCHS_DPLSTM = 40
-EPSILON_LSTM_DP = 1.0
+EPOCHS_DPLSTM = 100
+EPSILON_LSTM_DP = 2.0
 
 # Dataset
 DATASET = (
     # 'datasets/ETM_Configuration2.xes',
     'datasets/financial_log.xes',
+    # 'datasets/Sepsis Cases - Event Log.xes',
 )[0]
 
 # Logging
@@ -54,7 +55,7 @@ def get_dataset_df():
     if __dataset_df is None:
         log = xes_importer.apply(DATASET)
         __dataset_df = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
-    return __dataset_df.copy()
+    return __dataset_df.copy()[0:2000]
 
 def get_dataset_basename():
     """ Get the name of the dataset used, without path information and
