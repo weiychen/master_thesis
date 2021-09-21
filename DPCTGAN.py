@@ -144,12 +144,27 @@ class MyDataSampler(DataSampler):
         self.epochs = epochs
 
         model = self.get_fitted_model(batch, data, org_data, epochs)
+        word_df = self.get_words(model, data, epochs)
+        cleaned_df = self.clean_words(word_df, org_data)
+        vec = self.get_dummies(cleaned_df, data)
 
+        # unique_activities = list(activities_pd.columns) 
+        # vec = activities_pd[:batch].to_numpy()
+        # data = data[batch:]
+
+        return vec, cleaned_df
+
+    def get_words(self, model, data, epochs):
+        from checkpoint import GeneratedWordsCheckpoint
+        cp = GeneratedWordsCheckpoint(
+            config.get_dataset_basename(), epochs, "{:.1f}".format(config.EPSILON_LSTM_DP))
+        return cp.load_if_exists_else_generate(
+            config.RETRAIN_LSTM, self._generate_words, model, data)
+
+    def clean_words(self, word_df: pd.DataFrame, org_data):
         groups = org_data.groupby(['case:concept:name']).count()
         min_constraint = min(groups['time:timestamp'])
         max_constraint = max(groups['time:timestamp'])
-
-        word_df = self.get_words(model, data, epochs)
 
         word_df.id = word_df.id.astype(int)
         id_groups = word_df.groupby(['id']).count()
@@ -160,9 +175,10 @@ class MyDataSampler(DataSampler):
         #     matched_id = matched_id[0:unique_traces]
         for id in matched_id:
             cleaned_df=cleaned_df.append(word_df[word_df.id == id])  
-        cleaned_df = cleaned_df.rename(columns={"word": "concept:name","id":"traces"})
+        return cleaned_df.rename(columns={"word": "concept:name","id":"traces"})
 
-        activities_pd = pd.get_dummies(cleaned_df['concept:name'])
+    def get_dummies(self, words_df, data):
+        activities_pd = pd.get_dummies(words_df['concept:name'])
 
         # Add all columns of data to activities_pd dummies
         need_columns = data['concept:name'].unique()
@@ -171,22 +187,7 @@ class MyDataSampler(DataSampler):
                 activities_pd[col] = 0
         activities_pd = activities_pd[data['concept:name'].to_numpy()]
 
-        vec = activities_pd.to_numpy()
-
-        # unique_activities = list(activities_pd.columns) 
-        # vec = activities_pd[:batch].to_numpy()
-        # data = data[batch:]
-
-        return vec, cleaned_df
-
-    def get_words(self, model, data, epochs):
-
-        from checkpoint import GeneratedWordsCheckpoint
-        cp = GeneratedWordsCheckpoint(
-            config.get_dataset_basename(), epochs, "{:.1f}".format(config.EPSILON_LSTM_DP))
-
-        return cp.load_if_exists_else_generate(
-            config.RETRAIN_LSTM, self._generate_words, model, data)
+        return activities_pd.to_numpy()
 
     def _generate_words(self, model, data):
 
