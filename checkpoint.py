@@ -140,11 +140,12 @@ class LSTMCheckpoint(Checkpoint):
         self.set_name("nn.Model")
 
 class GeneratedWordsCheckpoint(Checkpoint):
-    def __init__(self, dataset_name, epochs, epsilon: str):
+    def __init__(self, dataset_name, epochs, enabled_dp: bool, epsilon: str):
         path = os.path.join(config.CHECKPOINTS_ROOT, "lstm", "generated_words_dfs")
         super().__init__(path, DataframeSaveLoad(), "words", ".csv")
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
+        self.add_info("dp", enabled_dp)
         self.add_info("eps", epsilon)
 
         self.set_name("words")

@@ -157,7 +157,7 @@ class MyDataSampler(DataSampler):
     def get_words(self, model, data, epochs):
         from checkpoint import GeneratedWordsCheckpoint
         cp = GeneratedWordsCheckpoint(
-            config.get_dataset_basename(), epochs, "{:.1f}".format(config.EPSILON_LSTM_DP))
+            config.get_dataset_basename(), epochs, config.ENABLED_DP_LSTM, "{:.1f}".format(config.EPSILON_LSTM_DP))
         return cp.load_if_exists_else_generate(
             config.RETRAIN_LSTM, self._generate_words, model, data)
 
