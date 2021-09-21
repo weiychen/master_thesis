@@ -97,7 +97,7 @@ class CTGANCheckpoint(Checkpoint):
         self.add_info("dp", enabled_dp)
         self.add_info("eps", epsilon)
 
-class DataframeCheckpoint(Checkpoint):
+class ResultsCheckpoint(Checkpoint):
     def __init__(self, dataset_name, epochs, enabled_dp):
         path = os.path.join(config.CHECKPOINTS_ROOT, "results")
         super().__init__(path, DataframeSaveLoad(), "result", ".csv")

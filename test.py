@@ -7,7 +7,7 @@ from sdv.tabular.ctgan import CTGAN
 from DPCTGAN import DPCTGAN
 from sdv.constraints import Positive
 
-from checkpoint import CTGANCheckpoint, DataframeCheckpoint
+from checkpoint import CTGANCheckpoint, ResultsCheckpoint
 import config
 import logger
 
@@ -110,7 +110,7 @@ def save_results(results_df: pd.DataFrame):
     """ This function saves the dataframe with the final results to a checkpoint file. For later evaluation,
     this file can then be opened using the utilities in 'evaluate.py'.
     """
-    cp = DataframeCheckpoint(
+    cp = ResultsCheckpoint(
         config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP
     )
     cp.save(results_df, override=config.OVERRIDE_EXISTING_RESULTS)

@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 
-from checkpoint import DataframeCheckpoint
+from checkpoint import ResultsCheckpoint
 
 # Settings of data to load. This is used to determine the
 # file name
@@ -15,7 +15,7 @@ dataset = (
 
 
 def load_sampled_data():
-    cp = DataframeCheckpoint(
+    cp = ResultsCheckpoint(
         os.path.basename(dataset).split(".")[0], EPOCHS_CTGAN, ENABLED_DP)
     
     if cp.exists():
