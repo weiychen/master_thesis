@@ -150,7 +150,7 @@ class MyDataSampler(DataSampler):
         max_constraint = max(groups['time:timestamp'])
 
         text = 'start'
-        next_words = len(data)*5
+        next_words = len(data)*4
         model.eval()
 
         words = text.split(' ')
@@ -192,15 +192,25 @@ class MyDataSampler(DataSampler):
         matched_id = id_groups.index[(id_groups.word >= min_constraint) & (id_groups.word <= max_constraint)]
         cleaned_df = pd.DataFrame()
         unique_traces = len(org_data['case:concept:name'].unique())
-        if len(matched_id) > unique_traces:
-            matched_id = matched_id[0:unique_traces]
+        # if len(matched_id) > unique_traces:
+        #     matched_id = matched_id[0:unique_traces]
         for id in matched_id:
             cleaned_df=cleaned_df.append(df[df.id == id])  
-        cleaned_df = cleaned_df.rename(columns={"word": "concept:name","id":"traces"})    
+        cleaned_df = cleaned_df.rename(columns={"word": "concept:name","id":"traces"})
 
         activities_pd = pd.get_dummies(cleaned_df['concept:name'])
+        """
+           a  b  c
+        0  1  0  0
+        1  0  1  0
+        2  0  0  1
+        3  1  0  0
+        """
 
-        dataframe = config.get_dataset_df()
+        need_columns = data['concept:name'].unique()
+        for col in need_columns:
+            if col not in activities_pd.columns:
+                activities_pd[col] = 0
         activities_pd = activities_pd[data['concept:name'].to_numpy()]
 
         vec = activities_pd.to_numpy()
