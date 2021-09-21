@@ -37,6 +37,7 @@ class Checkpoint:
         self.saveload: ISaveLoad = saveload
         self.save_file: str = model_name
         self.infos: list = list()
+        self.set_name(None)
 
     def add_info(self, name: str, value):
         """ Add info to be included in the Checkpoint's file name.
@@ -45,6 +46,10 @@ class Checkpoint:
         """
         self.infos.append({"name":name, "value": value})
         self._build_savefile_name()
+
+    def set_name(self, name: str):
+        """ Give the checkpoint a name, which is printed when loading. """
+        self.checkpoint_name = name
 
     def _build_savefile_name(self):
         self.save_file = os.path.join(self.folder_path, self.model_name)
@@ -71,12 +76,13 @@ class Checkpoint:
 
     def load_if_exists_else_generate(self, force_generate, generate_func, *args, **kwargs):
         """ Load checkpoint from file or generate a new one if file doesn't exist. """
+        name = " '" + self.checkpoint_name + "'" if self.checkpoint_name else ""
         if self.exists() and not force_generate:
-            logger.log("Loading checkpoint from '{}'".format(self.save_file), summary=True)
+            logger.log(f"Loading checkpoint{name} from '{self.save_file}'", summary=True)
             return self.load()
         else:
-            logger.log("Checkpoint file does not exist: {}".format(self.save_file), summary=True)
-            logger.log("Regenerating...", summary=True)
+            logger.log(f"Checkpoint{name} file does not exist: {self.save_file}", summary=True)
+            logger.log(f"Regenerating at checkpoint{name}...", summary=True)
             generated = generate_func(*args, **kwargs)
             self.save(generated)
             return generated
@@ -110,6 +116,8 @@ class CTGANCheckpoint(Checkpoint):
         self.add_info("dp", enabled_dp)
         self.add_info("eps", epsilon)
 
+        self.set_name("CTGAN Train")
+
 class ResultsCheckpoint(Checkpoint):
     def __init__(self, dataset_name, epochs, enabled_dp):
         path = os.path.join(config.CHECKPOINTS_ROOT, "results")
@@ -117,6 +125,8 @@ class ResultsCheckpoint(Checkpoint):
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
+
+        self.set_name("Results")
 
 class LSTMCheckpoint(Checkpoint):
     def __init__(self, dataset_name, epochs, epsilon: str):
@@ -126,6 +136,8 @@ class LSTMCheckpoint(Checkpoint):
         self.add_info("epochs", epochs)
         self.add_info("eps", epsilon)
 
+        self.set_name("nn.Model")
+
 class GeneratedWordsCheckpoint(Checkpoint):
     def __init__(self, dataset_name, epochs, epsilon: str):
         path = os.path.join(config.CHECKPOINTS_ROOT, "lstm", "generated_words_dfs")
@@ -133,3 +145,5 @@ class GeneratedWordsCheckpoint(Checkpoint):
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("eps", epsilon)
+
+        self.set_name("words")
