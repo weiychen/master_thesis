@@ -240,7 +240,8 @@ class MyDataSampler(DataSampler):
         """
 
         from checkpoint import LSTMCheckpoint
-        cp = LSTMCheckpoint(config.get_dataset_basename(), epochs, "{:.1f}".format(config.EPSILON_LSTM_DP))
+        cp = LSTMCheckpoint(
+            config.get_dataset_basename(), epochs, config.ENABLED_DP_LSTM, "{:.1f}".format(config.EPSILON_LSTM_DP))
         return cp.load_if_exists_else_generate(
             config.RETRAIN_LSTM, self._fit_model, batch, data, org_data, epochs)
 
@@ -267,17 +268,17 @@ class MyDataSampler(DataSampler):
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.008)
 
-
-        privacy_engine = PrivacyEngine(
-            model,
-            sample_rate=sample_rate,
-            max_grad_norm=max_per_sample_grad_norm,
-        #     target_delta=delta,
-            target_epsilon=config.EPSILON_LSTM_DP,
-            epochs=epochs,
-        #     secure_rng=secure_rng,
-        )
-        privacy_engine.attach(optimizer)
+        if config.ENABLED_DP_LSTM:
+            privacy_engine = PrivacyEngine(
+                model,
+                sample_rate=sample_rate,
+                max_grad_norm=max_per_sample_grad_norm,
+            #     target_delta=delta,
+                target_epsilon=config.EPSILON_LSTM_DP,
+                epochs=epochs,
+            #     secure_rng=secure_rng,
+            )
+            privacy_engine.attach(optimizer)
 
         logger.log("Sampling activities")
         epochs_info = list()

@@ -22,7 +22,7 @@ BATCH_SIZE = 20
 
 # CTGAN
 EPOCHS_CTGAN = 100
-ENABLED_DP = True
+ENABLED_DP_CTGAN = True
 EPSILON_CTGAN = 2.0
 
 SAMPLING_BATCH_SIZE = None # Set to None to use global BATCH_SIZE
@@ -30,6 +30,7 @@ SAMPLING_MATCH_ACTIVITIES_MAX_TRIES = 250
 
 # LSTM
 EPOCHS_DPLSTM = 100
+ENABLED_DP_LSTM = True
 EPSILON_LSTM_DP = 2.0
 
 # Dataset
@@ -80,7 +81,7 @@ def log_parameter_summary(main_logfile=True, summary=False):
 
     # CTGAN
     logger.log("EPOCHS_CTGAN                               : " + str(EPOCHS_CTGAN), main_logfile, summary)
-    logger.log("ENABLED_DP                                 : " + str(ENABLED_DP), main_logfile, summary)
+    logger.log("ENABLED_DP_CTGAN                           : " + str(ENABLED_DP_CTGAN), main_logfile, summary)
     logger.log("RETRAIN_CTGAN                              : " + str(RETRAIN_CTGAN), main_logfile, summary)
     logger.log("EPSILON_CTGAN                              : " + str(EPSILON_CTGAN), main_logfile, summary)
 
@@ -89,6 +90,7 @@ def log_parameter_summary(main_logfile=True, summary=False):
 
     # LSTM
     logger.log("EPOCHS_DPLSTM                              : " + str(EPOCHS_DPLSTM), main_logfile, summary)
+    logger.log("ENABLED_DP_LSTM                            : " + str(ENABLED_DP_LSTM), main_logfile, summary)
     logger.log("EPSILON_LSTM_DP                            : " + str(EPSILON_LSTM_DP), main_logfile, summary)
 
     # Dataset

@@ -43,7 +43,7 @@ def _fit_ctgan(data: pd.DataFrame, dataframe: pd.DataFrame):
     ctgan.fit(
         data, 
         dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
-        disabled_dp=not config.ENABLED_DP
+        disabled_dp=not config.ENABLED_DP_CTGAN
     )
     return ctgan
 
@@ -60,7 +60,7 @@ def get_fitted_model(data: pd.DataFrame, dataframe: pd.DataFrame) -> CTGAN:
     The function logs wether a pre-trained model was loaded or a new one was generated.
     """
     cp = CTGANCheckpoint(
-        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP, "{:.1f}".format(config.EPSILON_CTGAN))
+        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP_CTGAN, "{:.1f}".format(config.EPSILON_CTGAN))
     return cp.load_if_exists_else_generate(config.RETRAIN_CTGAN, _fit_ctgan, data, dataframe)
 
 def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
@@ -106,7 +106,7 @@ def save_results(results_df: pd.DataFrame):
     this file can then be opened using the utilities in 'evaluate.py'.
     """
     cp = ResultsCheckpoint(
-        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP
+        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP_CTGAN
     )
     cp.save(results_df, override=config.OVERRIDE_EXISTING_RESULTS)
 
