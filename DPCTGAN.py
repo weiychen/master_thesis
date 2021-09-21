@@ -524,8 +524,6 @@ class DPCTGAN(CTGANSynthesizer):
                  self._batch_size, self.data, self.org_data, config.EPOCHS_DPLSTM)
         activities_copy = activities.copy()
 
-        self.save("results/CHECKPOINT_after_generate_cond_from_condition_column_info.mdl")
-
         logger.log("Generating durations...")
         logger.log(f"Sampling device is: {self.device}", summary=True)
 
