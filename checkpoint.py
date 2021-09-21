@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 import torch
 from sdv.tabular.ctgan import CTGAN
 
+import logger
 import config
 
 class ISaveLoad(ABC):
@@ -67,6 +68,18 @@ class Checkpoint:
     def load(self):
         if self.exists():
             return self.saveload.load(self.save_file)
+
+    def load_if_exists_else_generate(self, force_generate, generate_func, *args, **kwargs):
+        """ Load checkpoint from file or generate a new one if file doesn't exist. """
+        if self.exists() and not force_generate:
+            logger.log("Loading checkpoint from '{}'".format(self.save_file), summary=True)
+            return self.load()
+        else:
+            logger.log("Checkpoint file does not exist: {}".format(self.save_file), summary=True)
+            logger.log("Regenerating...", summary=True)
+            generated = generate_func(*args, **kwargs)
+            self.save(generated)
+            return generated
 
 
 class CTGANSaveLoad(ISaveLoad):

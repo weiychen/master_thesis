@@ -149,6 +149,47 @@ class MyDataSampler(DataSampler):
         min_constraint = min(groups['time:timestamp'])
         max_constraint = max(groups['time:timestamp'])
 
+        word_df = self.get_words(model, data, epochs)
+
+        word_df.id = word_df.id.astype(int)
+        id_groups = word_df.groupby(['id']).count()
+        matched_id = id_groups.index[(id_groups.word >= min_constraint) & (id_groups.word <= max_constraint)]
+        cleaned_df = pd.DataFrame()
+        unique_traces = len(org_data['case:concept:name'].unique())
+        # if len(matched_id) > unique_traces:
+        #     matched_id = matched_id[0:unique_traces]
+        for id in matched_id:
+            cleaned_df=cleaned_df.append(word_df[word_df.id == id])  
+        cleaned_df = cleaned_df.rename(columns={"word": "concept:name","id":"traces"})
+
+        activities_pd = pd.get_dummies(cleaned_df['concept:name'])
+
+        # Add all columns of data to activities_pd dummies
+        need_columns = data['concept:name'].unique()
+        for col in need_columns:
+            if col not in activities_pd.columns:
+                activities_pd[col] = 0
+        activities_pd = activities_pd[data['concept:name'].to_numpy()]
+
+        vec = activities_pd.to_numpy()
+
+        # unique_activities = list(activities_pd.columns) 
+        # vec = activities_pd[:batch].to_numpy()
+        # data = data[batch:]
+
+        return vec, cleaned_df
+
+    def get_words(self, model, data, epochs):
+
+        from checkpoint import GeneratedWordsCheckpoint
+        cp = GeneratedWordsCheckpoint(
+            config.get_dataset_basename(), epochs, "{:.1f}".format(config.EPSILON_LSTM_DP))
+
+        return cp.load_if_exists_else_generate(
+            config.RETRAIN_LSTM, self._generate_words, model, data)
+
+    def _generate_words(self, model, data):
+
         text = 'start'
         next_words = len(data)*4
         model.eval()
@@ -186,39 +227,7 @@ class MyDataSampler(DataSampler):
                 continue
             new_ids.append(list_index)
             new_words.append(word)
-        df = pd.DataFrame({"id": ids, "word": _words})
-        df.id = df.id.astype(int)
-        id_groups = df.groupby(['id']).count()
-        matched_id = id_groups.index[(id_groups.word >= min_constraint) & (id_groups.word <= max_constraint)]
-        cleaned_df = pd.DataFrame()
-        unique_traces = len(org_data['case:concept:name'].unique())
-        # if len(matched_id) > unique_traces:
-        #     matched_id = matched_id[0:unique_traces]
-        for id in matched_id:
-            cleaned_df=cleaned_df.append(df[df.id == id])  
-        cleaned_df = cleaned_df.rename(columns={"word": "concept:name","id":"traces"})
-
-        activities_pd = pd.get_dummies(cleaned_df['concept:name'])
-        """
-           a  b  c
-        0  1  0  0
-        1  0  1  0
-        2  0  0  1
-        3  1  0  0
-        """
-
-        need_columns = data['concept:name'].unique()
-        for col in need_columns:
-            if col not in activities_pd.columns:
-                activities_pd[col] = 0
-        activities_pd = activities_pd[data['concept:name'].to_numpy()]
-
-        vec = activities_pd.to_numpy()
-
-        # unique_activities = list(activities_pd.columns) 
-        # vec = activities_pd[:batch].to_numpy()
-        # data = data[batch:]
-        return vec, cleaned_df
+        return pd.DataFrame({"id": ids, "word": _words})
 
     def get_fitted_model(self, batch, data, org_data, epochs):
         """ The function MyDataSampler.get_fitted_model uses a LSTM Checkpoint (see chapter
