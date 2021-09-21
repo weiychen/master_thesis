@@ -139,7 +139,7 @@ def main():
         # Activities don't match. Insert the lstm activities for
         # comparison
         logger.log('Activities don\'t match --> make sampled conc')
-        sampled['lstm_activities'] = activities['concept:name'].values
+        sampled['lstm_activities'] = activities.iloc[:len(sampled)]['concept:name'].values
 
     # Save the sampled data result
     save_results(sampled)
