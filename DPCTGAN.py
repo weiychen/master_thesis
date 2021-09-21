@@ -185,7 +185,7 @@ class MyDataSampler(DataSampler):
         for col in need_columns:
             if col not in activities_pd.columns:
                 activities_pd[col] = 0
-        activities_pd = activities_pd[data['concept:name'].to_numpy()]
+        activities_pd = activities_pd[data['concept:name'].unique()]
 
         return activities_pd.to_numpy()
 
