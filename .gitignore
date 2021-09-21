@@ -117,6 +117,7 @@ notebooks
 tests/readme_test
 
 checkpoints/
+datasets/
 Logs/
 nohup.out
 
