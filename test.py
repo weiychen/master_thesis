@@ -11,7 +11,7 @@ from checkpoint import CTGANCheckpoint, ResultsCheckpoint
 import config
 import logger
 
-logger.log_parameter_summary(True, True)
+config.log_parameter_summary(True, True)
 
 def load_data():
     """ The function load_data loads the data of the dataset specified in config.DATASET and

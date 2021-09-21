@@ -8,6 +8,8 @@ import os
 from pm4py.objects.log.importer.xes import importer as xes_importer
 from pm4py.objects.conversion.log import converter as log_converter
 
+import logger
+
 # Parameters for the checkpoints. These settings control, wether pre-trained
 # models are used (if existing) or if they are trained again.
 RETRAIN_CTGAN = False
@@ -43,7 +45,7 @@ LOG_FILE = os.path.join(LOGGING_FOLDER, "{datetime}_test.py.logs")
 SUMMARY_LOG_FILE = os.path.join(LOGGING_FOLDER, "{datetime}_summary.log")
 
 
-# =============== Functions to get special configurations =================
+# =============== Functions =================
 
 __dataset_df = None
 def get_dataset_df():
@@ -63,3 +65,33 @@ def get_dataset_basename():
     without file type extension.
     """
     return os.path.basename(DATASET).split(".")[0]
+
+
+def log_parameter_summary(main_logfile=True, summary=False):
+    logger.log("Main parameter summary:", main_logfile, summary)
+    logger.sep(main_logfile=main_logfile, summary=summary)
+    # Override existing checkpoints?
+    logger.log("RETRAIN_CTGAN                              : " + str(RETRAIN_CTGAN), main_logfile, summary)
+    logger.log("RETRAIN_LSTM                               : " + str(RETRAIN_LSTM), main_logfile, summary)
+    logger.log("OVERRIDE_EXISTING_RESULTS                  : " + str(OVERRIDE_EXISTING_RESULTS), main_logfile, summary)
+
+    # Global parameters
+    logger.log("BATCH_SIZE                                 : " + str(BATCH_SIZE), main_logfile, summary)
+
+    # CTGAN
+    logger.log("EPOCHS_CTGAN                               : " + str(EPOCHS_CTGAN), main_logfile, summary)
+    logger.log("ENABLED_DP                                 : " + str(ENABLED_DP), main_logfile, summary)
+    logger.log("RETRAIN_CTGAN                              : " + str(RETRAIN_CTGAN), main_logfile, summary)
+    logger.log("EPSILON_CTGAN                              : " + str(EPSILON_CTGAN), main_logfile, summary)
+
+    logger.log("SAMPLING_BATCH_SIZE                        : " + str(SAMPLING_BATCH_SIZE), main_logfile, summary)
+    logger.log("SAMPLING_MATCH_ACTIVITIES_MAX_TRIES        : " + str(SAMPLING_MATCH_ACTIVITIES_MAX_TRIES), main_logfile, summary)
+
+    # LSTM
+    logger.log("EPOCHS_DPLSTM                              : " + str(EPOCHS_DPLSTM), main_logfile, summary)
+    logger.log("EPSILON_LSTM_DP                            : " + str(EPSILON_LSTM_DP), main_logfile, summary)
+
+    # Dataset
+    logger.log("DATASET                                    : " + str(DATASET), main_logfile, summary)
+    
+    logger.sep(main_logfile=main_logfile, summary=summary)

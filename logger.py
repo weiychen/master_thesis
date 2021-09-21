@@ -56,31 +56,3 @@ def log(msg, main_logfile=True, summary=False):
 
 def sep(main_logfile=True, summary=False):
     log("==============================================================", main_logfile, summary)
-
-def log_parameter_summary(main_logfile=True, summary=False):
-    log("Main parameter summary:", main_logfile, summary)
-    sep(main_logfile=main_logfile, summary=summary)
-    # Override existing checkpoints?
-    log("RETRAIN_CTGAN                              : " + str(config.RETRAIN_CTGAN), main_logfile, summary)
-    log("RETRAIN_LSTM                               : " + str(config.RETRAIN_LSTM), main_logfile, summary)
-    log("OVERRIDE_EXISTING_RESULTS                  : " + str(config.OVERRIDE_EXISTING_RESULTS), main_logfile, summary)
-
-    # Global parameters
-    log("BATCH_SIZE                                 : " + str(config.BATCH_SIZE), main_logfile, summary)
-
-    # CTGAN
-    log("EPOCHS_CTGAN                               : " + str(config.EPOCHS_CTGAN), main_logfile, summary)
-    log("ENABLED_DP                                 : " + str(config.ENABLED_DP), main_logfile, summary)
-    log("RETRAIN_CTGAN                              : " + str(config.RETRAIN_CTGAN), main_logfile, summary)
-
-    log("SAMPLING_BATCH_SIZE                        : " + str(config.SAMPLING_BATCH_SIZE), main_logfile, summary)
-    log("SAMPLING_MATCH_ACTIVITIES_MAX_TRIES        : " + str(config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES), main_logfile, summary)
-
-    # LSTM
-    log("EPOCHS_DPLSTM                              : " + str(config.EPOCHS_DPLSTM), main_logfile, summary)
-    log("EPSILON_LSTM_DP                            : " + str(config.EPSILON_LSTM_DP), main_logfile, summary)
-
-    # Dataset
-    log("DATASET                                    : " + str(config.DATASET), main_logfile, summary)
-    
-    sep(main_logfile=main_logfile, summary=summary)
