@@ -59,7 +59,7 @@ def get_dataset_df():
     if __dataset_df is None:
         log = xes_importer.apply(DATASET)
         __dataset_df = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
-    return __dataset_df.copy()[0:2000]
+    return __dataset_df.copy()
 
 def get_dataset_basename():
     """ Get the name of the dataset used, without path information and
