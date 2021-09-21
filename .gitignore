@@ -116,11 +116,7 @@ tutorials/**/*metadata.json
 notebooks
 tests/readme_test
 
-
-datasets/
-fitted_models/
-nn_models/
-results/
+checkpoints/
 Logs/
 nohup.out
 

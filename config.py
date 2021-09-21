@@ -13,6 +13,7 @@ from pm4py.objects.conversion.log import converter as log_converter
 RETRAIN_CTGAN = False
 RETRAIN_LSTM = False
 OVERRIDE_EXISTING_RESULTS = True
+CHECKPOINTS_ROOT = "checkpoints"
 
 # Global parameters used in all parts of the model (LSTM and CTGAN)
 BATCH_SIZE = 20

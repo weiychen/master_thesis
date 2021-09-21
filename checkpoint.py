@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 import torch
 from sdv.tabular.ctgan import CTGAN
 
+import config
+
 class ISaveLoad(ABC):
     """ The ISaveLoad Interface defines the 'save' and 'load' methods
     needed by a Checkpoint. The checkpoint uses these to load and save
@@ -88,7 +90,8 @@ class LSTMSaveLoad(ISaveLoad):
 
 class CTGANCheckpoint(Checkpoint):
     def __init__(self, dataset_name, epochs, enabled_dp, epsilon):
-        super().__init__("fitted_models", CTGANSaveLoad(), "ctgan", ".mdl")
+        path = os.path.join(config.CHECKPOINTS_ROOT, "ctgan")
+        super().__init__(path, CTGANSaveLoad(), "ctgan", ".mdl")
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
@@ -96,14 +99,16 @@ class CTGANCheckpoint(Checkpoint):
 
 class DataframeCheckpoint(Checkpoint):
     def __init__(self, dataset_name, epochs, enabled_dp):
-        super().__init__("results", DataframeSaveLoad(), "sampled", ".csv")
+        path = os.path.join(config.CHECKPOINTS_ROOT, "results")
+        super().__init__(path, DataframeSaveLoad(), "result", ".csv")
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
 
 class LSTMCheckpoint(Checkpoint):
     def __init__(self, dataset_name, epochs, epsilon: str):
-        super().__init__("nn_models", LSTMSaveLoad(), "lstm")
+        path = os.path.join(config.CHECKPOINTS_ROOT, "lstm", "nn_models")
+        super().__init__(path, LSTMSaveLoad(), "lstm")
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("eps", epsilon)
