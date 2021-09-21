@@ -81,7 +81,7 @@ class Checkpoint:
             logger.log(f"Loading checkpoint{name} from '{self.save_file}'", summary=True)
             return self.load()
         else:
-            logger.log(f"Checkpoint{name} file does not exist: {self.save_file}", summary=True)
+            logger.log(f"Checkpoint{name} file does not exist: '{self.save_file}'", summary=True)
             logger.log(f"Regenerating at checkpoint{name}...", summary=True)
             generated = generate_func(*args, **kwargs)
             self.save(generated)
