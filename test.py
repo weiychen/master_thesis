@@ -37,6 +37,17 @@ def load_data():
     return data, dataframe
 
 
+def _fit_ctgan(data: pd.DataFrame, dataframe: pd.DataFrame):
+    pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
+    ctgan = CTGAN(epochs=config.EPOCHS_CTGAN, batch_size=config.BATCH_SIZE, constraints=[pos_constraint])
+    ctgan.fit(
+        data, 
+        dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
+        disabled_dp=not config.ENABLED_DP
+    )
+    return ctgan
+
+
 def get_fitted_model(data: pd.DataFrame, dataframe: pd.DataFrame) -> CTGAN:
     """ The function get_fitted_model uses a CTGAN Checkpoint (see chapter about checkpoints),
     to load a trained CTGAN model if one is available with the desired hyperparameters, or
@@ -50,23 +61,7 @@ def get_fitted_model(data: pd.DataFrame, dataframe: pd.DataFrame) -> CTGAN:
     """
     cp = CTGANCheckpoint(
         config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP, "{:.1f}".format(config.EPSILON_CTGAN))
-
-    if cp.exists() and not config.RETRAIN_CTGAN:
-        logger.log("Loading trained CTGAN model from '{}'".format(cp.save_file), summary=True)
-        ctgan = cp.load()
-    else:
-        logger.log("Checkpoint file does not exist: {}".format(cp.save_file), summary=True)
-        logger.log("Retraining CTGAN model...", summary=True)
-        pos_constraint = Positive(columns='duration', strict=False, handling_strategy='reject_sampling')
-        ctgan = CTGAN(epochs=config.EPOCHS_CTGAN, batch_size=config.BATCH_SIZE, constraints=[pos_constraint])
-        ctgan.fit(
-            data, 
-            dataframe[['concept:name','duration','case:concept:name','time:timestamp']],
-            disabled_dp=not config.ENABLED_DP
-        )
-        cp.save(ctgan)
-    return ctgan
-
+    return cp.load_if_exists_else_generate(config.RETRAIN_CTGAN, _fit_ctgan, data, dataframe)
 
 def is_concept_names_equal(df1: pd.DataFrame, df2: pd.DataFrame) -> bool:
     """ The function is_concept_names_equal compares the column 'concept:name' of two dataframes

@@ -241,17 +241,8 @@ class MyDataSampler(DataSampler):
 
         from checkpoint import LSTMCheckpoint
         cp = LSTMCheckpoint(config.get_dataset_basename(), epochs, "{:.1f}".format(config.EPSILON_LSTM_DP))
-
-        """ Load an already fitted model from file or fit a new one. """
-        if cp.exists() and not config.RETRAIN_LSTM:
-            logger.log("Loading trained nn.Model from '{}'".format(cp.save_file), summary=True)
-            return cp.load()
-        else:
-            logger.log("Checkpoint file does not exist: {}".format(cp.save_file), summary=True)
-            logger.log("Resampling activities (nn.Model)...", summary=True)
-            model = self._fit_model(batch, data, org_data, epochs)
-            cp.save(model)
-            return model
+        return cp.load_if_exists_else_generate(
+            config.RETRAIN_LSTM, self._fit_model, batch, data, org_data, epochs)
 
     def _fit_model(self, batch, data, org_data, epochs) -> Model:
         """ The function MyDataSampler._fit_model instantiates the torch.nn.Model, which is
