@@ -106,7 +106,7 @@ def save_results(results_df: pd.DataFrame):
     this file can then be opened using the utilities in 'evaluate.py'.
     """
     cp = ResultsCheckpoint(
-        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP_CTGAN
+        config.get_dataset_basename(), config.EPOCHS_CTGAN, config.ENABLED_DP_CTGAN, config.EPSILON_LSTM_DP
     )
     cp.save(results_df, override=config.OVERRIDE_EXISTING_RESULTS)
 

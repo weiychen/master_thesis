@@ -119,12 +119,13 @@ class CTGANCheckpoint(Checkpoint):
         self.set_name("CTGAN Train")
 
 class ResultsCheckpoint(Checkpoint):
-    def __init__(self, dataset_name, epochs, enabled_dp):
+    def __init__(self, dataset_name, epochs, enabled_dp, epsilon):
         path = os.path.join(config.CHECKPOINTS_ROOT, "results")
         super().__init__(path, DataframeSaveLoad(), "result", ".csv")
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
+        self.add_info("eps", epsilon)
 
         self.set_name("Results")
 
