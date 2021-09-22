@@ -123,9 +123,14 @@ def main():
     data, dataframe = load_data()
     ctgan = get_fitted_model(data, dataframe)
 
-    logger.log("\n\tSampling model.\n")
-    sampled, activities = ctgan.sample(len(data))
+    
+    logger.log("Generating activities...")
+    org_data = dataframe[['concept:name','duration','case:concept:name','time:timestamp']]
+    global_condition_vec, activities = ctgan._model._data_sampler.generate_cond_from_condition_column_info(
+                                                                config.BATCH_SIZE, data, org_data, config.EPOCHS_DPLSTM)
 
+    logger.log("\n\tSampling model.\n")
+    sampled, activities = ctgan.sample(global_condition_vec, activities, num_rows=len(activities))
     # Make sure they have the same activities
     if is_concept_names_equal(activities, sampled):
         logger.log("equal --> inner join by key with concept:name")

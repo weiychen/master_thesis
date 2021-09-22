@@ -488,7 +488,7 @@ class DPCTGAN(CTGANSynthesizer):
                 logger.log(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
                                 f"Loss D: {loss_d.detach().cpu(): .4f}")
 
-    def sample(self, n, condition_column=None, condition_value=None):
+    def sample(self, global_condition_vec, activities, n, condition_column=None, condition_value=None):
         """Sample data similar to the training data.
 
         Choosing a condition_column and condition_value will increase the probability of the
@@ -512,9 +512,6 @@ class DPCTGAN(CTGANSynthesizer):
                 
         # else:
         #     global_condition_vec = None
-        logger.log("Generating activities...")
-        global_condition_vec, activities = self._data_sampler.generate_cond_from_condition_column_info(
-                 self._batch_size, self.data, self.org_data, config.EPOCHS_DPLSTM)
         activities_copy = activities.copy()
 
         logger.log("Generating durations...")
