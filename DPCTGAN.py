@@ -524,6 +524,13 @@ class DPCTGAN(CTGANSynthesizer):
         else:
             fake_batch_size = self._batch_size
         
+        # Add fake activities to the end of activities_copy so there are always
+        # at least fake_batch_size rows to compare to below
+        activities_padding = activities_copy[0:fake_batch_size].copy()
+        activities_copy = activities_copy.append(activities_padding, ignore_index=True)
+        global_condition_vec_padding = global_condition_vec[0:fake_batch_size].copy()
+        global_condition_vec = np.append(global_condition_vec, global_condition_vec_padding, axis=0)
+        
         steps = n // fake_batch_size + 1
         data = []
         for i in trange(steps):
