@@ -171,8 +171,8 @@ class MyDataSampler(DataSampler):
         matched_id = id_groups.index[(id_groups.word >= min_constraint) & (id_groups.word <= max_constraint)]
         cleaned_df = pd.DataFrame()
         unique_traces = len(org_data['case:concept:name'].unique())
-        # if len(matched_id) > unique_traces:
-        #     matched_id = matched_id[0:unique_traces]
+        if len(matched_id) > unique_traces:
+            matched_id = matched_id[0:unique_traces]
         for id in matched_id:
             cleaned_df=cleaned_df.append(word_df[word_df.id == id])  
         return cleaned_df.rename(columns={"word": "concept:name","id":"traces"})
@@ -523,7 +523,7 @@ class DPCTGAN(CTGANSynthesizer):
             fake_batch_size = config.SAMPLING_BATCH_SIZE
         else:
             fake_batch_size = self._batch_size
-        
+
         # Add fake activities to the end of activities_copy so there are always
         # at least fake_batch_size rows to compare to below
         activities_padding = activities_copy[0:fake_batch_size].copy()
