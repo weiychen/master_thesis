@@ -114,7 +114,8 @@ class CTGANCheckpoint(Checkpoint):
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
-        self.add_info("eps", epsilon)
+        if enabled_dp:
+            self.add_info("eps", epsilon)
 
         self.set_name("CTGAN Train")
 
@@ -125,7 +126,8 @@ class ResultsCheckpoint(Checkpoint):
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
-        self.add_info("eps", epsilon)
+        if enabled_dp:
+            self.add_info("eps", epsilon)
 
         self.set_name("Results")
 
@@ -136,7 +138,8 @@ class LSTMCheckpoint(Checkpoint):
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
-        self.add_info("eps", epsilon)
+        if enabled_dp:
+            self.add_info("eps", epsilon)
 
         self.set_name("nn.Model")
 
@@ -147,6 +150,7 @@ class GeneratedWordsCheckpoint(Checkpoint):
         self.add_info("dataset", dataset_name)
         self.add_info("epochs", epochs)
         self.add_info("dp", enabled_dp)
-        self.add_info("eps", epsilon)
+        if enabled_dp:
+            self.add_info("eps", epsilon)
 
         self.set_name("words")
