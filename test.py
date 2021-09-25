@@ -22,10 +22,13 @@ def load_data():
     """
     logger.log(f"Load data from file '{config.DATASET}'")
     dataframe = config.get_dataset_df()
-    def infer_time(dataframe):
-        return -dataframe['time:timestamp'].diff(-1).dt.total_seconds()
+    delete = (dataframe.groupby('case:concept:name').size()==1).index[(dataframe.groupby('case:concept:name').size()==1)]
+
+    def infer_time(df):
+        return -df['time:timestamp'].diff(-1).dt.total_seconds()
     logger.log("Len dataframe:" + str(len(dataframe)), summary=True)
     logger.log("Calculate durations.")
+    dataframe = dataframe[-dataframe["case:concept:name"].isin(list(delete))]
     duration= dataframe.groupby('case:concept:name').apply(infer_time)
     dataframe['duration'] = duration.droplevel(0).reset_index(drop = True)
     logger.log("Resetting index.")
