@@ -23,25 +23,27 @@ BATCH_SIZE = 20
 # CTGAN
 EPOCHS_CTGAN = 100
 ENABLED_DP_CTGAN = True
-EPSILON_CTGAN = 2.0
+EPSILON_CTGAN = 1.0
 
-SAMPLING_BATCH_SIZE = None # Set to None to use global BATCH_SIZE
-SAMPLING_MATCH_ACTIVITIES_MAX_TRIES = 250
+SAMPLING_BATCH_SIZE = 2 # Set to None to use global BATCH_SIZE
+SAMPLING_MATCH_ACTIVITIES_MAX_TRIES = 10000
 
 # LSTM
 EPOCHS_DPLSTM = 100
-ENABLED_DP_LSTM = True
-EPSILON_LSTM_DP = 2.0
+ENABLED_DP_LSTM = ENABLED_DP_CTGAN
+EPSILON_LSTM_DP = EPSILON_CTGAN
 
 # Dataset
 DATASET = (
     # 'datasets/ETM_Configuration2.xes',
-    'datasets/financial_log.xes',
-    # 'datasets/Sepsis Cases - Event Log.xes',
+#    'datasets/financial_log.xes',
+   #  'datasets/Sepsis Cases - Event Log.xes',
+   'datasets/CoSeLoG.xes',
+
 )[0]
 
 # Logging
-LOGGING_FOLDER = "Logs"
+LOGGING_FOLDER = "campaign/ID10"
 LOG_FILE = os.path.join(LOGGING_FOLDER, "{datetime}_test.py.logs")
 SUMMARY_LOG_FILE = os.path.join(LOGGING_FOLDER, "{datetime}_summary.log")
 

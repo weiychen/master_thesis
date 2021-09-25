@@ -120,6 +120,7 @@ checkpoints/
 datasets/
 Logs/
 nohup.out
+campaign/
 
 include/
 *.whl

@@ -569,7 +569,7 @@ class DPCTGAN(CTGANSynthesizer):
                     global_condition_vec = global_condition_vec[fake_batch_size:]
 
                     if not last_try or activities_match:
-                        # logger.log(f"Found activites match after {j+1} tries.", summary=True, main_logfile=False)
+                        logger.log(f"Found activites match after {j+1} tries.", summary=True, main_logfile=False)
                         break
                     else:
                         logger.log(f"\nCouldn't find matching activities vector after {config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES} tries.", summary=True)
