@@ -1,3 +1,6 @@
+import os
+import warnings
+
 from ctgan import CTGANSynthesizer
 from ctgan.data_sampler import DataSampler
 from ctgan.data_transformer import DataTransformer
@@ -24,10 +27,11 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from opacus import PrivacyEngine
 import opacus
-from tqdm import trange
+from tqdm import trange, tqdm
 torch.manual_seed(1)
 
-
+import config
+import logger
 
 # log = xes_importer.apply('ETM_Configuration2.xes')#('financial_log.xes')
 # dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
@@ -96,8 +100,7 @@ class Dataset(torch.utils.data.Dataset):
         self.words_indexes = [self.word_to_index[w] for w in self.words]
 
     def load_words(self):
-        log = xes_importer.apply('ETM_Configuration2.xes')#('financial_log.xes') #('ETM_Configuration2.xes')
-        dataframe = log_converter.apply(log, variant=log_converter.Variants.TO_DATA_FRAME)
+        dataframe = config.get_dataset_df()
         series = dataframe.groupby('case:concept:name')['concept:name'].apply(list)
         test = []
         for s in series.values:
@@ -131,78 +134,84 @@ duplicate reading
 
 class MyDataSampler(DataSampler):
 
-    
-    def generate_cond_from_condition_column_info(self, batch, data, org_data):
-        dataset = Dataset()
-        model = Model(dataset)
-        model.train()
-        batch_size = 10#50
-        sequence_length = 10#50
-        max_epochs = 3
+    def generate_cond_from_condition_column_info(self, batch, data, org_data, epochs):
+        """ This method generates the fake activities sequence inlcuding traces. It samples
+        the model previously generated in the method 'get_fitted_model' and sorts the result
+        into a dataframe, which is then returned.
+        The returned dataframe is guaranteed to have the same number of rows as the original.
+        """
+        self.dataset = Dataset()
+        self.epochs = epochs
 
-        # Privacy engine hyper-parameters
-        max_per_sample_grad_norm = 1.0
-        # delta = 0#8e-5
-        epsilon = 2.0
-        epochs = 3#50
-        secure_rng = False
-        sample_rate = batch_size / len(data)
+        model = self.get_fitted_model(batch, data, org_data, epochs)
+        word_df = self.get_words(model, data, epochs)
+        cleaned_df = self.clean_words(word_df, org_data)
+        vec = self.get_dummies(cleaned_df, data)
 
-        dataloader = DataLoader(dataset, batch_size=batch_size,drop_last = True)
-        criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.008)
+        # unique_activities = list(activities_pd.columns) 
+        # vec = activities_pd[:batch].to_numpy()
+        # data = data[batch:]
 
+        return vec, cleaned_df
 
-        privacy_engine = PrivacyEngine(
-            model,
-            sample_rate=sample_rate,
-            max_grad_norm=max_per_sample_grad_norm,
-        #     target_delta=delta,
-            target_epsilon=epsilon,
-            epochs=epochs,
-        #     secure_rng=secure_rng,
-        )
-        privacy_engine.attach(optimizer)
+    def get_words(self, model, data, epochs):
+        from checkpoint import GeneratedWordsCheckpoint
+        cp = GeneratedWordsCheckpoint(
+            config.get_dataset_basename(), epochs, config.ENABLED_DP_LSTM, "{:.1f}".format(config.EPSILON_LSTM_DP))
+        return cp.load_if_exists_else_generate(
+            config.RETRAIN_LSTM, self._generate_words, model, data)
 
-        for epoch in range(max_epochs):
-            state_h, state_c = model.init_state(sequence_length)
-
-            for batch, (x, y) in enumerate(dataloader):
-                optimizer.zero_grad()
-
-                y_pred, (state_h, state_c) = model(x, (state_h, state_c))
-                loss = criterion(y_pred.transpose(1, 2), y)
-
-                state_h = state_h.detach()
-                state_c = state_c.detach()
-
-                loss.backward()
-                optimizer.step()
-
-            print({ 'epoch': epoch, 'batch': batch, 'loss': loss.item() })
-
+    def clean_words(self, word_df: pd.DataFrame, org_data):
         groups = org_data.groupby(['case:concept:name']).count()
         min_constraint = min(groups['time:timestamp'])
         max_constraint = max(groups['time:timestamp'])
 
+        word_df.id = word_df.id.astype(int)
+        id_groups = word_df.groupby(['id']).count()
+        matched_id = id_groups.index[(id_groups.word >= min_constraint) & (id_groups.word <= max_constraint)]
+        cleaned_df = pd.DataFrame()
+        unique_traces = len(org_data['case:concept:name'].unique())
+        if len(matched_id) > unique_traces:
+            matched_id = matched_id[0:unique_traces]
+        for id in matched_id:
+            cleaned_df=cleaned_df.append(word_df[word_df.id == id])  
+        return cleaned_df.rename(columns={"word": "concept:name","id":"traces"})
+
+    def get_dummies(self, words_df, data):
+        activities_pd = pd.get_dummies(words_df['concept:name'])
+
+        # Add all columns of data to activities_pd dummies
+        need_columns = data['concept:name'].unique()
+        for col in need_columns:
+            if col not in activities_pd.columns:
+                activities_pd[col] = 0
+        activities_pd = activities_pd[data['concept:name'].unique()]
+
+        return activities_pd.to_numpy()
+
+    def _generate_words(self, model, data):
+
         text = 'start'
-        next_words = len(data)*10
+        next_words = len(data)*4
         model.eval()
 
         words = text.split(' ')
         state_h, state_c = model.init_state(len(words))
 
-        for i in range(0, next_words):
-            x = torch.tensor([[dataset.word_to_index[w] for w in words[i:]]])
+        logger.log("Generating words.")
+        for i in trange(next_words):
+            x = torch.tensor([[self.dataset.word_to_index[w] for w in words[i:]]])
             y_pred, (state_h, state_c) = model(x, (state_h, state_c))
             last_word_logits = y_pred[0][-1]
             p = torch.nn.functional.softmax(last_word_logits, dim=0).detach().numpy()
             word_index = np.random.choice(len(last_word_logits), p=p)
-            words.append(dataset.index_to_word[word_index])
+            words.append(self.dataset.index_to_word[word_index])
+
+        logger.log("Formatting words into dataframe.")
         ids = list()
         _words = list()
         list_index = 0
-        for word in words:
+        for word in tqdm(words):
             if word == "start":
                 new_ids = list()
                 new_words = list()
@@ -219,28 +228,86 @@ class MyDataSampler(DataSampler):
                 continue
             new_ids.append(list_index)
             new_words.append(word)
-        df = pd.DataFrame({"id": ids, "word": _words})
-        df.id = df.id.astype(int)
-        id_groups = df.groupby(['id']).count()
-        matched_id = id_groups.index[(id_groups.word >= min_constraint) & (id_groups.word <= max_constraint)]
-        cleaned_df = pd.DataFrame()
-        unique_traces = len(org_data['case:concept:name'].unique())
-        if len(matched_id) > unique_traces:
-            matched_id = matched_id[0:unique_traces]
-        for id in matched_id:
-            cleaned_df=cleaned_df.append(df[df.id == id])  
-        cleaned_df = cleaned_df.rename(columns={"word": "concept:name","id":"traces"})    
-        activities_pd = pd.get_dummies(cleaned_df['concept:name'], prefix='Activity')
-        vec = activities_pd.to_numpy()
-        # unique_activities = list(activities_pd.columns) 
-        # vec = activities_pd[:batch].to_numpy()
-        # data = data[batch:]
-        return vec, cleaned_df 
+        return pd.DataFrame({"id": ids, "word": _words})
 
+    def get_fitted_model(self, batch, data, org_data, epochs):
+        """ The function MyDataSampler.get_fitted_model uses a LSTM Checkpoint (see chapter
+        about checkpoints), to load a trained DPLSTM model if one is available with the desired
+        hyperparameters, or train a new one if none is available. The function then returns the
+        trained DPLSTM model.
+
+        This function logs wether a pre-trained model was loaded or a new one was generated.
+        """
+
+        from checkpoint import LSTMCheckpoint
+        cp = LSTMCheckpoint(
+            config.get_dataset_basename(), epochs, config.ENABLED_DP_LSTM, "{:.1f}".format(config.EPSILON_LSTM_DP))
+        return cp.load_if_exists_else_generate(
+            config.RETRAIN_LSTM, self._fit_model, batch, data, org_data, epochs)
+
+    def _fit_model(self, batch, data, org_data, epochs) -> Model:
+        """ The function MyDataSampler._fit_model instantiates the torch.nn.Model, which is
+        a DPLSTM model.
+        An opacus PrivacyEngine is attached to that model and a Adam optimizer is used. The
+        loss criterion is cross entropy loss.
+        The model is trained using the hyperparameters defined in 'config.py'.
+        """
+        model = Model(self.dataset)
+        model.train()
+        batch_size = 10#50
+        sequence_length = 10#50
+        max_epochs = epochs
+
+        # Privacy engine hyper-parameters
+        max_per_sample_grad_norm = 1.0
+        # delta = 0#8e-5
+        secure_rng = False
+        sample_rate = batch_size / len(data)
+
+        dataloader = DataLoader(self.dataset, batch_size=batch_size, drop_last=True)
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.008)
+
+        if config.ENABLED_DP_LSTM:
+            privacy_engine = PrivacyEngine(
+                model,
+                sample_rate=sample_rate,
+                max_grad_norm=max_per_sample_grad_norm,
+            #     target_delta=delta,
+                target_epsilon=config.EPSILON_LSTM_DP,
+                epochs=epochs,
+            #     secure_rng=secure_rng,
+            )
+            privacy_engine.attach(optimizer)
+
+        logger.log("Sampling activities")
+        epochs_info = list()
+        for epoch in trange(max_epochs):
+            state_h, state_c = model.init_state(sequence_length)
+
+            for _batch, (x, y) in enumerate(dataloader):
+                optimizer.zero_grad()
+
+                y_pred, (state_h, state_c) = model(x, (state_h, state_c))
+                loss = criterion(y_pred.transpose(1, 2), y)
+
+                state_h = state_h.detach()
+                state_c = state_c.detach()
+
+                loss.backward()
+                optimizer.step()
+
+            epochs_info.append({ 'epoch': epoch, 'batch': batch, 'loss': loss.item() })
+        
+        for info in epochs_info:
+            logger.log(info, summary=True)
+
+        return model
+        
 
 class DPCTGAN(CTGANSynthesizer):
 
-    def fit(self, train_data, org_data, discrete_columns=tuple(), epochs=None):
+    def fit(self, train_data, org_data, discrete_columns=tuple(), epochs=None, disabled_dp=False):
         """
         Fit the CTGAN Synthesizer models to the training data.
 
@@ -256,10 +323,10 @@ class DPCTGAN(CTGANSynthesizer):
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         # opacus parameters
         self.sigma = 5#sigma
-        self.disabled_dp = False #disabled_dp
+        self.disabled_dp = disabled_dp
         self.target_delta = None#target_delta
         self.max_per_sample_grad_norm = 1#max_per_sample_grad_norm
-        self.epsilon = 2 #epsilon
+        self.epsilon = config.EPSILON_CTGAN #epsilon
         self.epsilon_list = []
         self.alpha_list = []
         self.loss_d_list = []
@@ -317,21 +384,21 @@ class DPCTGAN(CTGANSynthesizer):
             discriminator.parameters(), lr=self._discriminator_lr,
             betas=(0.5, 0.9), weight_decay=self._discriminator_decay
         )
-        # privacy_engine = opacus.PrivacyEngine( 
-        #     discriminator,
-        #     batch_size=self._batch_size,
-        #     sample_rate = self._batch_size / len(self.data),
-        #     # sample_size=train_data.shape[0],
-        #     # alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
-        #     # noise_multiplier=self.sigma,
-        #     max_grad_norm=self.max_per_sample_grad_norm,
-        #     target_epsilon=self.epsilon,
-        #     epochs = epochs
-        #     # clip_per_layer=True,
-        # )
 
-        # if not self.disabled_dp:
-        #     privacy_engine.attach(optimizerD)
+        if not self.disabled_dp:
+            privacy_engine = opacus.PrivacyEngine( 
+                discriminator,
+                batch_size=self._batch_size,
+                sample_rate = self._batch_size / len(self.data),
+                # sample_size=train_data.shape[0],
+                # alphas=[1 + x / 10.0 for x in range(1, 100)] + list(range(12, 64)),
+                # noise_multiplier=self.sigma,
+                max_grad_norm=self.max_per_sample_grad_norm,
+                target_epsilon=self.epsilon,
+                epochs = epochs
+                # clip_per_layer=True,
+            )
+            privacy_engine.attach(optimizerD)
 
         # real_label = 1
         # fake_label = 0
@@ -377,54 +444,16 @@ class DPCTGAN(CTGANSynthesizer):
                     y_fake = discriminator(fake_cat)
                     y_real = discriminator(real_cat)
 
-                    pen = discriminator.calc_gradient_penalty(
-                        real_cat, fake_cat, self._device, self.pac)
+                    if self.disabled_dp:
+                        pen = discriminator.calc_gradient_penalty(
+                            real_cat, fake_cat, self._device, self.pac)
                     loss_d = -(torch.mean(y_real) - torch.mean(y_fake))
 
                     optimizerD.zero_grad()
-                    pen.backward(retain_graph=True)
+                    if self.disabled_dp:
+                        pen.backward(retain_graph=True)
                     loss_d.backward()
                     optimizerD.step()
-                    # """change location"""
-                    # optimizerD.zero_grad()
-                    # if self.loss == "cross_entropy":
-                    #     y_fake = discriminator(fake_cat)
-                    #     """added label_fake"""
-                    #     label_fake = torch.full(
-                    #     (int(self._batch_size / self.pac),),
-                    #     fake_label,
-                    #     dtype=torch.float,
-                    #     device=self.device,
-                    # )
-                    #     """add below"""
-                    #     y_fake = torch.abs(y_fake)
-                    #     y_fake[y_fake>1]=1
-                    #     error_d_fake = criterion(y_fake.flatten(), label_fake)
-                    #     error_d_fake.backward()
-                    #     optimizerD.step()
-                    #     # train with real
-                    #     label_true = torch.full(
-                    #         (int(self._batch_size / self.pac),),
-                    #         real_label,
-                    #         dtype=torch.float,
-                    #         device=self.device,
-                    #     )
-                    #     y_real = discriminator(real_cat)
-                    #     """change<0 --> 0"""
-                    #     y_real[y_real>1]=1
-                    #     y_real[y_real<0]=0
-                    #     error_d_real = criterion(y_real.flatten(), label_true)
-                    #     error_d_real.backward()
-                    #     optimizerD.step()
-
-                    #     loss_d = error_d_real + error_d_fake
-
-
-
-                    
-                    # pen.backward(retain_graph=True)
-                    # loss_d.backward()
-                    # optimizerD.step()
 
                 fakez = torch.normal(mean=mean, std=std)
                 condvec = self._data_sampler.sample_condvec(self._batch_size)
@@ -455,37 +484,11 @@ class DPCTGAN(CTGANSynthesizer):
                 loss_g.backward()
                 optimizerG.step()
 
-                # if self.loss == "cross_entropy":
-                #     label_g = torch.full(
-                #         (int(self._batch_size / self.pac),),
-                #         real_label,
-                #         dtype=torch.float,
-                #         device=self.device,
-                #     )
-                #     # label_g = torch.full(int(self.batch_size/self.pac,),1,device=self.device)
-                #     y_fake[y_fake<0]=0
-                #     y_fake[y_fake>1]=1
-                #     loss_g = criterion(y_fake.flatten(), label_g)
-                #     loss_g = loss_g + cross_entropy
-                # else:
-                #     loss_g = -torch.mean(y_fake) + cross_entropy
+            if self.verbose:
+                logger.log(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
+                                f"Loss D: {loss_d.detach().cpu(): .4f}")
 
-                # optimizerG.zero_grad()
-                # loss_g.backward()
-                # optimizerG.step()
-
-                # loss_g = -torch.mean(y_fake) + cross_entropy
-
-                # optimizerG.zero_grad()
-                # loss_g.backward()
-                # optimizerG.step()
-
-            if self._verbose:
-                print(f"Epoch {i+1}, Loss G: {loss_g.detach().cpu(): .4f},"
-                        f"Loss D: {loss_d.detach().cpu(): .4f}",
-                        flush=True)
-
-    def sample(self, n, condition_column=None, condition_value=None):
+    def sample(self, global_condition_vec, activities, n, condition_column=None, condition_value=None):
         """Sample data similar to the training data.
 
         Choosing a condition_column and condition_value will increase the probability of the
@@ -509,38 +512,76 @@ class DPCTGAN(CTGANSynthesizer):
                 
         # else:
         #     global_condition_vec = None
-        global_condition_vec, activities = self._data_sampler.generate_cond_from_condition_column_info(
-                 self._batch_size, self.data, self.org_data)
+        activities_copy = activities.copy()
+
+        logger.log("Generating durations...")
+        logger.log(f"Sampling device is: {self.device}", summary=True)
+
+        failed = False
+
+        if config.SAMPLING_BATCH_SIZE is not None:
+            fake_batch_size = config.SAMPLING_BATCH_SIZE
+        else:
+            fake_batch_size = self._batch_size
+
+        # Add fake activities to the end of activities_copy so there are always
+        # at least fake_batch_size rows to compare to below
+        activities_padding = activities_copy[0:fake_batch_size].copy()
+        activities_copy = activities_copy.append(activities_padding, ignore_index=True)
+        global_condition_vec_padding = global_condition_vec[0:fake_batch_size].copy()
+        global_condition_vec = np.append(global_condition_vec, global_condition_vec_padding, axis=0)
         
-        steps = n // self._batch_size #+ 1
+        steps = n // fake_batch_size + 1
         data = []
-        for i in range(steps):
-            mean = torch.zeros(self._batch_size, self._embedding_dim)
-            std = mean + 1
-            fakez = torch.normal(mean=mean, std=std).to(self._device)
-            
-            if global_condition_vec is not None:
-                condvec = global_condition_vec[:self._batch_size]
+        for i in trange(steps):
 
-                global_condition_vec = global_condition_vec[self._batch_size:]
-            # else:
-            #     condvec = self._data_sampler.sample_original_condvec(self._batch_size)
+            next_activities = activities_copy[:fake_batch_size]
+            activities_copy = activities_copy[fake_batch_size:]
 
-            if len(condvec) != self._batch_size :#is None:
-                break
-                #pass
-            else:
-                c1 = condvec
+            # Iterate until the generated activities match next_activities
+            for j in range(config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES):
+
+                mean = torch.zeros(fake_batch_size, self._embedding_dim)
+                std = mean + 1
+                fakez = torch.normal(mean=mean, std=std).to(self._device)
+
+                if global_condition_vec is not None:
+                    condvec = global_condition_vec[:fake_batch_size]
+                    if len(condvec) != fake_batch_size:
+                        fakez = fakez[:len(condvec)]
+
+                c1 = condvec # One-Hot Encoding Vector
                 c1 = torch.from_numpy(c1).to(self._device)
                 fakez = torch.cat([fakez, c1], dim=1)
 
-            fake = self._generator(fakez)
-            fakeact = self._apply_activate(fake)
-            data.append(fakeact.detach().cpu().numpy())
+                fake = self._generator(fakez)
+                fakeact = self._apply_activate(fake)
+
+                generated = self._transformer.inverse_transform(fakeact.detach().cpu().numpy())
+                activities_match = generated['concept:name'].values == next_activities['concept:name'].values
+                activities_match = activities_match if isinstance(activities_match, bool) else activities_match.all()
+                last_try = j == config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES-1
+                if activities_match or last_try:
+                    # The generated activities match. Continue with next step
+                    data.append(generated)
+
+                    # Remove used entries of global_condition_vec for next iteration step
+                    global_condition_vec = global_condition_vec[fake_batch_size:]
+
+                    if not last_try or activities_match:
+                        logger.log(f"Found activites match after {j+1} tries.", summary=True, main_logfile=False)
+                        break
+                    else:
+                        logger.log(f"\nCouldn't find matching activities vector after {config.SAMPLING_MATCH_ACTIVITIES_MAX_TRIES} tries.", summary=True)
+                        failed = True
+                
+            if failed:
+                # break
+                # Just continue to see how bad the result actually is.
+                pass
 
         data = np.concatenate(data, axis=0)
-        data = data[:n]
-        transformed = self._transformer.inverse_transform(data)
+        transformed = pd.DataFrame(data[:n], columns=["concept:name", "duration"])
         
-        return transformed#, activities
+        return transformed, activities
 

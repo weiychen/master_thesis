@@ -114,7 +114,7 @@ class BaseTabularModel:
             self._metadata = table_metadata
             self._metadata_fitted = table_metadata.fitted
 
-    def fit(self, data, orig_data):
+    def fit(self, data, orig_data, disabled_dp):
         """Fit this model to the data.
 
         If the table metadata has not been given, learn it from the data.
@@ -140,7 +140,7 @@ class BaseTabularModel:
         if self._metadata.get_dtypes(ids=False):
             LOGGER.debug(
                 'Fitting %s model to table %s', self.__class__.__name__, self._metadata.name)
-            self._fit(transformed, orig_data)
+            self._fit(transformed, orig_data, disabled_dp)
 
     def get_metadata(self):
         """Get metadata about the table.
@@ -189,7 +189,7 @@ class BaseTabularModel:
 
         return sampled
 
-    def _sample_rows(self, num_rows, conditions=None, transformed_conditions=None,
+    def _sample_rows(self, global_cond_vec, activities, num_rows, conditions=None, transformed_conditions=None,
                      float_rtol=0.1, previous_rows=None):
         """Sample rows with the given conditions.
 
@@ -225,12 +225,12 @@ class BaseTabularModel:
         """
         if self._metadata.get_dtypes(ids=False):
             if conditions is None:
-                sampled = self._sample(num_rows)
+                sampled, activities = self._sample(global_cond_vec, activities, num_rows)
             else:
                 try:
-                    sampled = self._sample(num_rows, transformed_conditions)
+                    sampled = self._sample(global_cond_vec, activities, num_rows, transformed_conditions)
                 except NotImplementedError:
-                    sampled = self._sample(num_rows)
+                    sampled = self._sample(global_cond_vec, activities, num_rows)
 
             sampled = self._metadata.reverse_transform(sampled)
 
@@ -244,14 +244,14 @@ class BaseTabularModel:
 
             num_valid = len(sampled)
 
-            return sampled, num_valid
+            return sampled, num_valid, activities
 
         else:
             sampled = pd.DataFrame(index=range(num_rows))
             sampled = self._metadata.reverse_transform(sampled)
             return sampled, num_rows
 
-    def _sample_batch(self, num_rows=None, max_retries=100, max_rows_multiplier=10,
+    def _sample_batch(self, global_cond_vec, activities, num_rows=None, max_retries=100, max_rows_multiplier=10,
                       conditions=None, transformed_conditions=None, float_rtol=0.01):
         """Sample a batch of rows with the given conditions.
 
@@ -296,7 +296,7 @@ class BaseTabularModel:
             pandas.DataFrame:
                 Sampled data.
         """
-        sampled, num_valid = self._sample_rows(
+        sampled, num_valid, activities = self._sample_rows(global_cond_vec, activities, 
             num_rows, conditions, transformed_conditions, float_rtol)
 
         # counter = 0
@@ -318,7 +318,7 @@ class BaseTabularModel:
 
         #     counter += 1
 
-        return sampled.head(min(len(sampled), num_rows))
+        return sampled.head(min(len(sampled), num_rows)), activities
 
     def _make_conditions_df(self, conditions, num_rows):
         """Transform `conditions` into a dataframe.
@@ -389,7 +389,7 @@ class BaseTabularModel:
 
         return sampled_rows
 
-    def sample(self, num_rows=None, max_retries=100, max_rows_multiplier=10,
+    def sample(self, global_cond_vec, activities, num_rows=None, max_retries=100, max_rows_multiplier=10,
                conditions=None, float_rtol=0.01, graceful_reject_sampling=False):
         """Sample rows from this table.
 
@@ -439,7 +439,7 @@ class BaseTabularModel:
         """
         if conditions is None:
             num_rows = num_rows or self._num_rows
-            return self._sample_batch(num_rows, max_retries, max_rows_multiplier)
+            return self._sample_batch(global_cond_vec, activities, num_rows, max_retries, max_rows_multiplier)
 
         # convert conditions to dataframe
         conditions = self._make_conditions_df(conditions, num_rows)

@@ -23,7 +23,7 @@ class CTGANModel(BaseTabularModel):
     def _build_model(self):
         return self._MODEL_CLASS(**self._model_kwargs)
 
-    def _fit(self, table_data, orig_data):
+    def _fit(self, table_data, orig_data, disabled_dp):
         """Fit the model to the table.
 
         Args:
@@ -58,10 +58,11 @@ class CTGANModel(BaseTabularModel):
         self._model.fit(
             table_data,
             orig_data,
-            discrete_columns=categoricals
+            discrete_columns=categoricals,
+            disabled_dp=disabled_dp
         )
 
-    def _sample(self, num_rows, conditions=None):
+    def _sample(self, global_cond_vec, activities, num_rows, conditions=None):
         """Sample the indicated number of rows from the model.
 
         Args:
@@ -77,7 +78,7 @@ class CTGANModel(BaseTabularModel):
                 Sampled data.
         """
         if conditions is None:
-            return self._model.sample(num_rows)
+            return self._model.sample(global_cond_vec, activities, num_rows)
 
         raise NotImplementedError(f"{self._MODEL_CLASS} doesn't support conditional sampling.")
 

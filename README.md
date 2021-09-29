@@ -1,3 +1,44 @@
+# Using Generative Adversarial Networks for Event Log Generation (Master Thesis - Wei-Yi Chen)
+## Setup
+- Clone this repository using git
+    ```
+    git clone https://github.com/weiychen/master_thesis.git
+    ```
+- Setup python virtual environment (in the repositories root folder)
+    
+    ```bash
+    python -m venv env
+
+    # Windows (cmd)
+    call ./env/Scripts/activate.bat
+    # OR Windows (git bash)
+    # source env/Scripts/activate
+    # OR Linux
+    # source env/bin/activate
+
+    pip install -r requirements.txt
+    ```
+    Note: Some of errors (e.g. version clashs) during the installation of requirements can just be ignored
+        
+## Running the model
+
+- Put dataset files (xes format) in folder "datasets" on the root level
+- Adjust config.py with desired parameters
+  - Set the 'DATASET' variable to the path of the dataset you added in the datasets folder
+- Run the main.py file
+  ```bash
+  python main.py
+  ```
+
+## Other notes
+
+- The final result is stored in path 'checkpoints/results'
+- Checkpoint files are generated in different stages during the training and sampling
+  - The files are stored in path 'checkpoints/*'
+  - If the model is run again with the same parameter of the checkpoint files, the checkpoint files are loaded instead of retraining/regenerating
+  - To retrain/regenerate, delete the corresponding checkpoint file or set the corresponding config value in config.py
+
+# Original SDV Readme
 <p align="left">
   <a href="https://dai.lids.mit.edu">
     <img width=15% src="https://dai.lids.mit.edu/wp-content/uploads/2018/06/Logo_DAI_highres.png" alt="DAI-Lab" />

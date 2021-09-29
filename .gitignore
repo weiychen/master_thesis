@@ -115,3 +115,13 @@ tutorials/**/*.pkl
 tutorials/**/*metadata.json
 notebooks
 tests/readme_test
+
+checkpoints/
+datasets/
+Logs/
+nohup.out
+campaign/
+
+include/
+*.whl
+Anaconda3-4.4.0-Linux-x86_64.sh
